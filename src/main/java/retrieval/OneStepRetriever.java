@@ -73,9 +73,6 @@ public class OneStepRetriever {
         ;
 
         TopDocs topDocs;
-        int numQueries = 1;
-        int count = 0;
-
         for (Map.Entry<String, String> e : testQueries.entrySet()) {
             String qid = e.getKey();
             String queryText = e.getValue();
@@ -86,10 +83,7 @@ public class OneStepRetriever {
             topDocs = searcher.search(luceneQuery, Constants.NUM_WANTED);
 
             saveTopDocs(qid, topDocs);
-            if (count++ >= numQueries)
-                break;
         }
-
     }
 
     public PerDocTermVector buildStatsForSingleDoc(IndexReader reader, int docId) throws IOException {
@@ -130,7 +124,6 @@ public class OneStepRetriever {
 
         for (ScoreDoc sd : topDocs.scoreDocs) {
             String fileName = String.format("%s/sparse_%d.txt", qidPath, sd.doc);
-            System.out.println("Writing file " + fileName);
 
             BufferedWriter bw = new BufferedWriter(new FileWriter(fileName));
 
