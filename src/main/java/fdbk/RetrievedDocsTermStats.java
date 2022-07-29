@@ -27,7 +27,7 @@ public class RetrievedDocsTermStats {
     int sumTf;
     float sumDf;
     float sumSim;
-    Map<String, RetrievedDocTermInfo> termStats;
+    Map<String, RetrievedDocTermInfo> termStats; // stats for each term in top-k
     Map<Integer, PerDocTermVector> docTermVecs;
     int numTopDocs;
     
