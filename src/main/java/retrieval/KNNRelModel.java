@@ -199,39 +199,6 @@ public class KNNRelModel extends SupervisedRLM {
         ;
     }
 
-    public void computeFdbkTermWeights() throws Exception {
-        Map<String, String> testQueries = loadQueries(Constants.QUERY_FILE_TEST);
-        testQueries
-                .entrySet()
-                .stream()
-                .collect(
-                        Collectors.toMap(
-                                e -> e.getKey(),
-                                e -> MsMarcoIndexer.normalizeNumbers(e.getValue())
-                        )
-                )
-        ;
-
-        TopDocs topDocs = null;
-        Map<String, TopDocs> topDocsMap = new HashMap<>(queries.size());
-
-        for (Map.Entry<String, String> e : testQueries.entrySet()) {
-            MsMarcoQuery query = new MsMarcoQuery(e.getKey(), e.getValue());
-
-            Query luceneQuery = query.makeQuery();
-            topDocs = searcher.search(luceneQuery, Constants.NUM_WANTED); // descending BM25
-            topDocsMap.put(query.qid, topDocs);
-        }
-        for (Map.Entry<String, String> e : testQueries.entrySet()) {
-            MsMarcoQuery query = new MsMarcoQuery(e.getKey(), e.getValue());
-            String qid = query.qid;
-            String queryText = query.qText;
-
-            topDocs = topDocsMap.get(qid);
-            printFdbkTerms(searcher, query, topDocs);
-        }
-    }
-
     public void retrieve() throws Exception {
         Map<String, String> testQueries = loadQueries(Constants.QUERY_FILE_TEST);
         testQueries
@@ -396,17 +363,6 @@ public class KNNRelModel extends SupervisedRLM {
         return fdbkModel.rerankDocs(topDocs);
     }
 
-    void printFdbkTerms(IndexSearcher searcher, MsMarcoQuery query, TopDocs topDocs)
-        throws Exception {
-        RelevanceModelIId fdbkModel = new RelevanceModelConditional(
-                searcher, query, topDocs, Constants.RLM_NUM_TOP_DOCS);
-        fdbkModel.computeFdbkWeights();
-        System.out.println(query.qid + ": " + query.qText);
-        for (RetrievedDocTermInfo x: fdbkModel.getRetrievedDocsTermStats().getTermStats().values()) {
-            System.out.println(x.getTerm() + ": " + x.getWeight());
-        }
-    }
-
     TopDocs rlm(IndexSearcher searcher, MsMarcoQuery query, TopDocs topDocs) throws Exception {
         RelevanceModelIId fdbkModel = new RelevanceModelConditional(
                 searcher, query, topDocs, Constants.RLM_NUM_TOP_DOCS);
@@ -422,8 +378,7 @@ public class KNNRelModel extends SupervisedRLM {
     public static void main(String[] args) {
         try {
             KNNRelModel knnRelModel = new KNNRelModel(Constants.QRELS_TRAIN, Constants.QUERY_FILE_TRAIN);
-            //knnRelModel.retrieve();
-            knnRelModel.computeFdbkTermWeights();
+            knnRelModel.retrieve();
         }
         catch (Exception ex) { ex.printStackTrace(); }
     }
