@@ -86,7 +86,7 @@ public class OneStepRetriever {
         }
     }
 
-    public PerDocTermVector buildStatsForSingleDoc(IndexReader reader, int docId) throws IOException {
+    static public PerDocTermVector buildStatsForSingleDoc(IndexReader reader, int docId) throws IOException {
         String termText;
         BytesRef term;
         Terms tfvector;
@@ -156,7 +156,7 @@ public class OneStepRetriever {
     }
 
     public static void main(String[] args) throws Exception {
-        OneStepRetriever oneStepRetriever = new OneStepRetriever(Constants.QUERY_FILE_TRAIN);
+        OneStepRetriever oneStepRetriever = new OneStepRetriever(Constants.QUERY_FILE_TEST);
         oneStepRetriever.retrieve();
         oneStepRetriever.reader.close();
     }

@@ -10,9 +10,10 @@ public interface Constants {
     String QUERY_FILE_TRAIN = "data/queries.train.tsv";
     String STOP_FILE = "stop.txt";
     String QUERY_FILE_TEST = "data/trecdl/pass_2019.queries";
+    //String QUERY_FILE_TEST = "data/queries.dev.small.tsv";
     String QRELS_TEST = "data/trecdl/pass_2019.qrels";
     String RES_FILE = "res.txt";
-    String RES_FILE_RERANKED = "res_srlm.txt";
+    String RES_FILE_RERANKED = "res_rlm.txt";
     String SAVED_MODEL = "model.tsv";
     int NUM_WANTED = 1000;
     float LAMBDA = 0.9f;
@@ -27,7 +28,7 @@ public interface Constants {
     float MIXING_LAMDA = 0.9f;
     float FDBK_LAMBDA = 0.2f;
     boolean RLM = true;
-    int RLM_NUM_TOP_DOCS = 5;
+    int RLM_NUM_TOP_DOCS = 20;
     int RLM_NUM_TERMS = 20;
     float RLM_NEW_TERMS_WT = 0.2f;
     boolean RLM_POST_QE = false;

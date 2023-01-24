@@ -106,6 +106,15 @@
                 <mainClass>indexing.MsMarcoIndexer</mainClass>
             </configuration>
         </execution>
+        <execution>
+        <id>gensparse</id>
+        <goals>
+        <goal>java</goal>
+        </goals>
+        <configuration>
+        <mainClass>indexer.SparseVecWriter</mainClass>
+        </configuration>
+        </execution>
     </executions>
     </plugin>
     </plugins>
