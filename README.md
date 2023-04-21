@@ -5,7 +5,7 @@ This code is distributed in the hope that it'll be useful for IR practitioners a
 
 ### Index the MS MARCO passage collection
 
-Download the MS MARCO passage collection file `collection.tsv', and create a soft link to the file named `data/collection,tsv'.
+Download the MS MARCO passage collection file `collection.tsv`, and create a soft link to the file named `data/collection.tsv`.
  
 Run the following script to build the index.
 ```
