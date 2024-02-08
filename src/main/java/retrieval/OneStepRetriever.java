@@ -48,6 +48,11 @@ public class OneStepRetriever {
                 ;
     }
 
+    public Query makeQuery(MsMarcoQuery query) throws Exception {
+        String queryText = query.qText;
+        return makeQuery(queryText);
+    }
+
     public Query makeQuery(String queryText) throws Exception {
         BooleanQuery.Builder qb = new BooleanQuery.Builder();
         String[] tokens = MsMarcoIndexer.analyze(MsMarcoIndexer.constructAnalyzer(), queryText).split("\\s+");
@@ -57,6 +62,7 @@ public class OneStepRetriever {
         }
         return (Query)qb.build();
     }
+
 
     public void retrieve() throws Exception {
         Map<String, String> testQueries = loadQueries(Constants.QUERY_FILE_TEST);
@@ -72,6 +78,7 @@ public class OneStepRetriever {
                 )
         ;
 
+        BufferedWriter bw = new BufferedWriter(new FileWriter("run.res"));
         TopDocs topDocs;
         for (Map.Entry<String, String> e : testQueries.entrySet()) {
             String qid = e.getKey();
@@ -82,8 +89,11 @@ public class OneStepRetriever {
             System.out.println(String.format("Retrieving for query %s: %s", qid, luceneQuery));
             topDocs = searcher.search(luceneQuery, Constants.NUM_WANTED);
 
-            saveTopDocs(qid, topDocs);
+            //saveTopDocs(qid, topDocs);
+
+            saveTopDocsResFile(bw, qid, queryText, topDocs);
         }
+        bw.close();
     }
 
     static public PerDocTermVector buildStatsForSingleDoc(IndexReader reader, int docId) throws IOException {
@@ -108,6 +118,28 @@ public class OneStepRetriever {
             docTermVector.addTerm(termText, tf);
         }
         return docTermVector;
+    }
+
+    void saveTopDocsText(BufferedWriter bw, String qid, String queryText, TopDocs topDocs) throws Exception {
+        Map<String, Integer> word2id = new HashMap<>();
+        bw.write(qid);
+        bw.write("\t");
+        bw.write(queryText);
+
+        for (ScoreDoc sd: topDocs.scoreDocs) {
+            int docId = sd.doc;
+            bw.write("\t");
+            bw.write(reader.document(docId).get(Constants.CONTENT_FIELD));
+        }
+        bw.write("\n");
+    }
+
+    void saveTopDocsResFile(BufferedWriter bw, String qid, String queryText, TopDocs topDocs) throws Exception {
+        int rank = 1;
+        for (ScoreDoc sd: topDocs.scoreDocs) {
+            int docId = sd.doc;
+            bw.write(String.format("%s\tQ0\t%s\t%d\t%.4f\tthis_run\n", qid, reader.document(docId).get(Constants.ID_FIELD), rank++, sd.score));
+        }
     }
 
     void saveTopDocs(String qid, TopDocs topDocs) throws Exception {

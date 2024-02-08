@@ -3,6 +3,7 @@ package retrieval;
 import indexing.MsMarcoIndexer;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
+import org.json.simple.JSONObject;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -13,6 +14,7 @@ public class MsMarcoQuery {
     String qid;
     String qText;
     Query query;
+    JSONObject fewshotInfo;
     float simWithOrig;
 
     public MsMarcoQuery(String qid, String qText) {

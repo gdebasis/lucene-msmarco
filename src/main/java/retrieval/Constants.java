@@ -9,7 +9,9 @@ public interface Constants {
     String QRELS_TRAIN = "data/qrels.train.tsv";
     String QUERY_FILE_TRAIN = "data/queries.train.tsv";
     String STOP_FILE = "stop.txt";
+    String FEWSHOT_JSON = "fewshot.json";
     String QUERY_FILE_TEST = "data/trecdl/pass_2019.queries";
+    //String QUERY_FILE_TEST = "data/fever.tsv";
     //String QUERY_FILE_TEST = "data/queries.dev.small.tsv";
     String QRELS_TEST = "data/trecdl/pass_2019.qrels";
     String RES_FILE = "res.txt";
@@ -22,7 +24,7 @@ public interface Constants {
     boolean QRYEXPANSION = false;
     boolean RERANK = false;
     int NUM_QUERY_TERM_MATCHES = 3;
-    int K = 3;
+    int K = 10;
     int MU = 1000;
     int NUM_EXPANSION_TERMS = 20;
     float MIXING_LAMDA = 0.9f;

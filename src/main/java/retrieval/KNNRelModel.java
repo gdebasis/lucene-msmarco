@@ -2,7 +2,6 @@ package retrieval;
 
 import fdbk.RelevanceModelConditional;
 import fdbk.RelevanceModelIId;
-import fdbk.RetrievedDocTermInfo;
 import indexing.MsMarcoIndexer;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
@@ -10,9 +9,10 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
-import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.LMDirichletSimilarity;
 import org.apache.lucene.store.FSDirectory;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 import qrels.PerQueryRelDocs;
 
 import java.io.BufferedWriter;
@@ -50,26 +50,105 @@ public class KNNRelModel extends SupervisedRLM {
         qIndexSearcher.setSimilarity(new LMDirichletSimilarity(Constants.MU));
     }
 
-    List<MsMarcoQuery> knnQueries(String currentQuery, int k) {
+    int findRank(String docId, TopDocs topDocs) throws Exception {
+        int key = getDocOffset(docId);
+        int rank = topDocs.scoreDocs.length;
+        for (int i=0; i < topDocs.scoreDocs.length; i++) {
+            ScoreDoc sd = topDocs.scoreDocs[i];
+            if (key == sd.doc) {
+                rank = i;
+                break;
+            }
+        }
+        return rank+1;
+    }
+
+    List<MsMarcoQuery> genFewShotExamples(MsMarcoQuery query, int k) {
+        query.fewshotInfo = new JSONObject();
+        query.fewshotInfo.put("trecdl.query.id", query.qid);
+        query.fewshotInfo.put("trecdl.query.text", query.qText);
+        JSONArray relatedQueries = new JSONArray();
+
         try {
-            Query luceneQuery = makeQuery(currentQuery);
+            Query luceneQuery = makeQuery(query.qText);
             List<MsMarcoQuery> knnQueries = new ArrayList<>();
+            Map<String, Double> rel;
 
             TopDocs knnQueriesTopDocs = qIndexSearcher.search(luceneQuery, k);
             for (ScoreDoc sd : knnQueriesTopDocs.scoreDocs) {
                 Document q = qIndexReader.document(sd.doc);
                 knnQueries.add(
-                        new MsMarcoQuery(q.get(Constants.ID_FIELD),
-                            MsMarcoIndexer.analyze(analyzer, q.get(Constants.CONTENT_FIELD)),
+                        new MsMarcoQuery(
+                            q.get(Constants.ID_FIELD),
+                            q.get(Constants.CONTENT_FIELD),
+                            //MsMarcoIndexer.analyze(analyzer, q.get(Constants.CONTENT_FIELD)),
                             sd.score)
                 );
             }
-            System.out.print(currentQuery + "\t");
-            System.out.println(knnQueries.stream().map(x -> x.qText).collect(Collectors.joining("|")));
 
+            int relQIndex, relDocIndex;
+
+            System.out.println(String.format("Query: %s", query.qText));
+            relQIndex = 0;
+
+            for (MsMarcoQuery rq: knnQueries) {
+                relQIndex++;
+                //System.out.println(String.format("Related Query %d: %s", relQIndex, rq.qText));
+                JSONObject rq_json = new JSONObject();
+                rq_json.put("msmarco.query.id", rq.qid);
+                rq_json.put("msmarco.query.text", rq.qText);
+                rq_json.put("msmarco.query.rank", relQIndex);
+                JSONArray relDocsJsonArray = new JSONArray();
+
+                rq.query = makeQuery(rq.qText);
+                System.out.println("Executing top-100 on related query " + rq.query);
+                TopDocs topDocsRQ = searcher.search(rq.query, 1000);
+                // Find the ranks of the rel and the nonrel docs
+
+                PerQueryRelDocs relDocIds = rels.getRelInfo(rq.qid);
+                if (relDocIds == null) continue;
+
+                relDocIndex = 0;
+                JSONObject docInfoJsonObj = new JSONObject();
+                for (String docId : relDocIds.getRelDocs()) {
+                    relDocIndex++;
+
+                    String relDocText = reader.document(getDocOffset(docId)).get(Constants.CONTENT_FIELD);
+                    System.out.println(String.format("Query %d [%s], RelDoc %d [%s]  %s", relQIndex, rq.qid, relDocIndex, docId, relDocText));
+                    System.out.println("Reldoc rank: " + findRank(docId, topDocsRQ));
+
+                    docInfoJsonObj.put("reldoc.id", docId);
+                    docInfoJsonObj.put("reldoc.text", relDocText);
+                    docInfoJsonObj.put("reldoc.lexmodel.rank", findRank(docId, topDocsRQ));
+
+                    // We also need to provide one non-rel doc. For that we execute a LM-Dir/BM25
+                    // on this query and sample a doc at random from ranks 50 to 100.
+                    int sampled_negative_index = 50 + (int)(Math.random() * 100);
+
+                    Document negDoc = reader.document(topDocsRQ.scoreDocs[sampled_negative_index].doc);
+                    String nonRelDocId = negDoc.get(Constants.ID_FIELD);
+                    String nonRelDocText = negDoc.get(Constants.CONTENT_FIELD);
+                    System.out.println(String.format("Query %d [%s], NonRelDoc %d [%s]: %s", relQIndex, rq.qid, relDocIndex, nonRelDocId, nonRelDocText));
+                    System.out.println("NonReldoc rank: " + sampled_negative_index);
+
+                    docInfoJsonObj.put("nreldoc.id", nonRelDocId);
+                    docInfoJsonObj.put("nreldoc.text", nonRelDocText);
+                    docInfoJsonObj.put("nreldoc.lexmodel.rank", sampled_negative_index);
+
+                }
+                relDocsJsonArray.add(docInfoJsonObj);
+                rq_json.put("msmarco.qrel.info", relDocsJsonArray);
+                relatedQueries.add(rq_json);
+            }
+            query.fewshotInfo.put("fewshots", relatedQueries);
+
+            //System.out.println(knnQueries.stream().map(x -> x.qText).collect(Collectors.joining("|")));
             return knnQueries;
         }
-        catch (Exception ex) { return null; }
+        catch (Exception ex) {
+            ex.printStackTrace();
+            return null;
+        }
     }
 
     Query rocchioQE(MsMarcoQuery query, TopDocs topDocs) throws Exception {
@@ -83,7 +162,8 @@ public class KNNRelModel extends SupervisedRLM {
         Map<String, Double> relAcc = new HashMap<>(), nonRelAcc = new HashMap<>();
 
         try {
-            List<MsMarcoQuery> knnQueries = knnQueries(query.qText, Constants.K);
+            List<MsMarcoQuery> knnQueries = genFewShotExamples(query, Constants.K);
+
             for (MsMarcoQuery knnQ: knnQueries) {
                 PerQueryRelDocs relDocIds = rels.getRelInfo(knnQ.qid);
                 if (relDocIds == null) continue;
@@ -136,7 +216,10 @@ public class KNNRelModel extends SupervisedRLM {
         return expandedQuery;
     }
 
-    BooleanQuery makeQueryWithExpansionTerms(String qid, String queryText) {
+    BooleanQuery makeQueryWithExpansionTerms(MsMarcoQuery query) {
+        String qid = query.qid;
+        String queryText = query.qText;
+
         // original query terms
         BooleanQuery.Builder qb = new BooleanQuery.Builder();
         Set<String> queryTerms =
@@ -148,7 +231,7 @@ public class KNNRelModel extends SupervisedRLM {
 
         try {
             termDistributions.clear();
-            List<MsMarcoQuery> knnQueries = knnQueries(queryText, Constants.K);
+            List<MsMarcoQuery> knnQueries = genFewShotExamples(query, Constants.K);
             for (MsMarcoQuery knnQ: knnQueries) {
                 fit(knnQ.qid, knnQ.qText);
             }
@@ -183,8 +266,9 @@ public class KNNRelModel extends SupervisedRLM {
         return qb.build();
     }
 
-    void findKNNOfQueries() throws Exception {
-        loadQueries(Constants.QUERY_FILE_TEST)
+    void findKNNOfQueries(String trecDLQueryFile, String outJSONFile) throws Exception {
+        Map<String, String> testQueries =
+        loadQueries(trecDLQueryFile)
         .entrySet()
         .stream()
         .collect(
@@ -193,10 +277,16 @@ public class KNNRelModel extends SupervisedRLM {
                 e -> MsMarcoIndexer.normalizeNumbers(e.getValue()
                 )
             )
-        )
-        .values().stream()
-        .forEach(x -> knnQueries(x, Constants.K));
-        ;
+        );
+
+        BufferedWriter bw = new BufferedWriter(new FileWriter(outJSONFile));
+        for (Map.Entry<String, String> e: testQueries.entrySet()) {
+            MsMarcoQuery testQuery = new MsMarcoQuery(e.getKey(), e.getValue());
+            genFewShotExamples(testQuery, Constants.K);
+            bw.write(testQuery.fewshotInfo.toJSONString());
+            bw.newLine();
+        }
+        bw.close();
     }
 
     public void retrieve() throws Exception {
@@ -222,7 +312,7 @@ public class KNNRelModel extends SupervisedRLM {
             topDocs = searcher.search(luceneQuery, Constants.NUM_WANTED); // descending BM25
             topDocsMap.put(query.qid, topDocs);
 
-            //Query luceneQuery = Constants.QRYEXPANSION? makeQueryWithExpansionTerms(qid, queryText) : makeQuery(queryText);
+            //Query luceneQuery = Constants.QRYEXPANSION? makeQueryWithExpansionTerms(query) : makeQuery(query);
         }
 
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(Constants.RES_FILE))) {
@@ -235,7 +325,7 @@ public class KNNRelModel extends SupervisedRLM {
                 if (Constants.RLM)
                     topDocs = rlm(searcher, query, topDocs);
                 else if (Constants.RERANK)
-                    topDocs = rerank(queryText, topDocs);
+                    topDocs = rerank(query, topDocs);
                 else if (Constants.QRYEXPANSION) {
                     Query expandedQuery = rocchioQE(query, topDocs);
                     System.out.println("Expanded query: " + expandedQuery.toString());
@@ -299,13 +389,14 @@ public class KNNRelModel extends SupervisedRLM {
     }
 
     // Use the supervised RLM to rerank results
-    TopDocs rerank(String queryText, TopDocs retrievedRes) throws Exception {
+    TopDocs rerank(MsMarcoQuery query, TopDocs retrievedRes) throws Exception {
+        String queryText = query.qText;
         ScoreDoc[] rerankedScoreDocs = new ScoreDoc[retrievedRes.scoreDocs.length];
         Map<String, Double> knnDocTermWts, thisDocTermWts;
         int i = 0;
         double p_R_d = 0;
 
-        List<MsMarcoQuery> knnQueries = knnQueries(queryText, Constants.K);
+        List<MsMarcoQuery> knnQueries = genFewShotExamples(query, Constants.K);
 
         knnDocTermWts = makeAvgLMDocModel(knnQueries); // make a centroid of reldocs for this query
         if (knnDocTermWts == null)
@@ -330,7 +421,7 @@ public class KNNRelModel extends SupervisedRLM {
     }
 
     TopDocs srlm(IndexSearcher searcher, MsMarcoQuery query, TopDocs topDocs) throws Exception {
-        List<MsMarcoQuery> knnQueries = knnQueries(query.qText, Constants.K);
+        List<MsMarcoQuery> knnQueries = genFewShotExamples(query, Constants.K);
         List<ScoreDoc> relDocs = new ArrayList<>();
         for (MsMarcoQuery knnQuery: knnQueries) {
             PerQueryRelDocs relDocIds = rels.getRelInfo(knnQuery.qid);
@@ -378,7 +469,16 @@ public class KNNRelModel extends SupervisedRLM {
     public static void main(String[] args) {
         try {
             KNNRelModel knnRelModel = new KNNRelModel(Constants.QRELS_TRAIN, Constants.QUERY_FILE_TRAIN);
-            knnRelModel.retrieve();
+            //knnRelModel.retrieve();
+
+            if (args.length<2) {
+                System.out.println("usage: retrieval.KNNRelModel <TREC DL evaluation query file (2019/2020)>");
+                args = new String[1];
+                args[0] = Constants.QUERY_FILE_TEST;
+                args[1] = Constants.FEWSHOT_JSON;
+            }
+
+            knnRelModel.findKNNOfQueries(args[0], args[1]);
         }
         catch (Exception ex) { ex.printStackTrace(); }
     }
