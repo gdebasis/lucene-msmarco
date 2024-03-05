@@ -78,5 +78,7 @@ public class MsMarcoQuery {
         return (Query)qb.build();
     }
 
+    public Query getQuery() { return query; }
+    public String getId() { return qid; }
 }
 
