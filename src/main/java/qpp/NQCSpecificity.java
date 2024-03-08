@@ -3,8 +3,8 @@ package qpp;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TopDocs;
-import evaluator.RetrievedResults;
 import retrieval.MsMarcoQuery;
+import qrels.RetrievedResults;
 
 import java.io.IOException;
 import java.util.Arrays;

@@ -6,8 +6,8 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TopDocs;
-import evaluator.RetrievedResults;
 import retrieval.MsMarcoQuery;
+import qrels.*;
 
 import java.io.IOException;
 import java.util.HashSet;

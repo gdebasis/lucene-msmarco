@@ -1,13 +1,15 @@
 package retrieval;
 
 import indexing.MsMarcoIndexer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.json.simple.JSONObject;
+import qrels.AllRelRcds;
+import qrels.PerQueryRelDocs;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class MsMarcoQuery {
@@ -16,6 +18,7 @@ public class MsMarcoQuery {
     Query query;
     JSONObject fewshotInfo;
     float simWithOrig;
+    PerQueryRelDocs relDocs;
 
     public MsMarcoQuery(String qid, String qText) {
         this(qid, qText, 1);
@@ -78,7 +81,47 @@ public class MsMarcoQuery {
         return (Query)qb.build();
     }
 
+    public List<MsMarcoQuery> retrieveSimilarQueries(
+            AllRelRcds rels,
+            IndexSearcher searcher,
+            IndexSearcher qIndexSearcher,
+            int k) throws Exception {
+        List<MsMarcoQuery> knnQueries = new ArrayList<>();
+
+        TopDocs knnQueriesTopDocs = qIndexSearcher.search(this.query, k);
+        double scoreSum = 0;
+        for (ScoreDoc sd : knnQueriesTopDocs.scoreDocs) {
+            Document q = qIndexSearcher.getIndexReader().document(sd.doc);
+            MsMarcoQuery rq = new MsMarcoQuery(
+                q.get(Constants.ID_FIELD),
+                q.get(Constants.CONTENT_FIELD),
+                sd.score);
+            rq.query = makeQuery();
+
+            knnQueries.add(rq);
+            rq.simWithOrig = sd.score;
+            rq.relDocs = rels.getRelInfo(rq.qid);
+            scoreSum += rq.simWithOrig;
+        }
+
+        for (MsMarcoQuery rq: knnQueries) {
+            rq.simWithOrig /= scoreSum;
+        }
+
+        return knnQueries;
+    }
+
     public Query getQuery() { return query; }
     public String getId() { return qid; }
+
+    public PerQueryRelDocs getRelDocSet() { return relDocs; }
+
+    public float getRefSim() {
+        return simWithOrig;
+    }
+
+    public String toString() {
+        return String.format("%s, %s: (%.4f)", qText, query, simWithOrig);
+    }
 }
 

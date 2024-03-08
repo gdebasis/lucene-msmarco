@@ -1,4 +1,5 @@
 package qrels;
+import experiments.Settings;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import retrieval.Constants;
@@ -25,7 +26,17 @@ public class AllRetrievedResults {
         catch (Exception ex) { ex.printStackTrace(); }
     }
 
-    public Set<String> queryIds() { return this.allRetMap.keySet(); }
+    public Set<String> queries() { return this.allRetMap.keySet(); }
+
+    public AllRetrievedResults(String qid, TopDocs topDocs) {
+        allRetMap = new TreeMap<>();
+        RetrievedResults rr = new RetrievedResults(qid);
+        int rank = 1;
+        for (ScoreDoc sd: topDocs.scoreDocs) {
+            rr.addTuple(Settings.getDocIdFromOffset(sd.doc), rank++, sd.score);
+        }
+        allRetMap.put(qid, rr);
+    }
 
     public RetrievedResults getRetrievedResultsForQueryId(String qid) {
         return allRetMap.get(qid);
@@ -51,23 +62,23 @@ public class AllRetrievedResults {
         return buff.toString();
     }
 
-    public static int getDocOffsetFromId(IndexSearcher searcher, String docId) {
-        try {
-            Query query = new TermQuery(new Term(Constants.ID_FIELD, docId));
-            TopDocs topDocs = searcher.search(query, 1);
-            return topDocs.scoreDocs[0].doc;
+    public void fillRelInfo(AllRelRcds relInfo) {
+        for (Map.Entry<String, RetrievedResults> e : allRetMap.entrySet()) {
+            RetrievedResults res = e.getValue();
+            PerQueryRelDocs thisRelInfo = relInfo.getRelInfo(String.valueOf(res.qid));
+            if (thisRelInfo != null)
+                res.fillRelInfo(thisRelInfo);
         }
-        catch (Exception ex) { ex.printStackTrace(); }
-        return -1;
+        this.allRelInfo = relInfo;
     }
 
-    public Map<String, TopDocs> castToTopDocs(IndexSearcher searcher) {
+    public Map<String, TopDocs> castToTopDocs() {
         Map<String, TopDocs> topDocsMap = new HashMap<>();
         for (RetrievedResults rr: allRetMap.values()) {
             int numret = rr.rtuples.size();
             List<ScoreDoc> scoreDocs = new ArrayList<>();
             for (ResultTuple tuple: rr.rtuples) {
-                int docOffset = getDocOffsetFromId(searcher, tuple.docName);
+                int docOffset = Settings.getDocOffsetFromId(tuple.docName);
                 if (docOffset>0)
                     scoreDocs.add(new ScoreDoc(docOffset, (float)tuple.score));
             }
@@ -78,6 +89,40 @@ public class AllRetrievedResults {
         }
         return topDocsMap;
     }
+
+    public double compute(String qid, Metric m) {
+        double res = 0;
+        RetrievedResults rr = allRetMap.get(qid);
+        switch (m) {
+            case AP: res = rr.computeAP(); break;
+            case P_10: res = rr.precAtTop(10); break;
+            case Recall: res = rr.computeRecall(); break;
+            case nDCG: res = rr.computeNdcg();
+        }
+        return res;
+    }
+
+    String computeAll() {
+        StringBuffer buff = new StringBuffer();
+        float map = 0f;
+        float gm_ap = 0f;
+        float avgRecall = 0f;
+        float numQueries = (float)allRetMap.size();
+        float pAt5 = 0f;
+
+        for (Map.Entry<String, RetrievedResults> e : allRetMap.entrySet()) {
+            RetrievedResults res = e.getValue();
+            float ap = res.computeAP();
+            map += ap;
+            gm_ap += ap>0? Math.log(ap): 0;
+            pAt5 += res.precAtTop(5);
+        }
+
+        buff.append("recall:\t").append(avgRecall/(float)allRelInfo.getTotalNumRel()).append("\n");
+        buff.append("map:\t").append(map/numQueries).append("\n");
+        buff.append("gmap:\t").append((float)Math.exp(gm_ap/numQueries)).append("\n");
+        buff.append("P@5:\t").append(pAt5/numQueries).append("\n");
+
+        return buff.toString();
+    }
 }
-
-

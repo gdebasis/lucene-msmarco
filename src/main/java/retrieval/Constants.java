@@ -17,7 +17,7 @@ public interface Constants {
     String RES_FILE = "res.txt";
     String RES_FILE_RERANKED = "res_rlm.txt";
     String SAVED_MODEL = "model.tsv";
-    int NUM_WANTED = 1000;
+    int NUM_WANTED = 100;
     float LAMBDA = 0.9f;
     float LAMBDA_ODDS = Constants.LAMBDA/(1-Constants.LAMBDA);
     int NUM_TOP_TERMS = 5;
@@ -40,4 +40,9 @@ public interface Constants {
     double ROCCHIO_GAMMA = 1-(ROCCHIO_ALPHA + ROCCHIO_BETA);
     int ROCCHIO_NUM_NEGATIVE = 3;
     String TOPDOCS_FOLDER = "topdocs";
+
+    float QPP_JM_COREL_LAMBDA = 0.0f;
+    float QPP_JM_COREL_MU = 0.8f;
+    int QPP_JM_COREL_NUMNEIGHBORS = 3;
+    int QPP_NUM_TOPK = 50;
 }

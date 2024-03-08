@@ -75,7 +75,7 @@ public class TermDistribution {
         return sim;
     }
 
-    static double cosineSim(Map<String, Double> a, Map<String, Double> b) {
+    public static double cosineSim(Map<String, Double> a, Map<String, Double> b) {
         double sim = 0;
         if (a.isEmpty())
             return 0;

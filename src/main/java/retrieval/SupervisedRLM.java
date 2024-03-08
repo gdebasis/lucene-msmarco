@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import indexing.MsMarcoIndexer;
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.similarities.*;
@@ -30,10 +31,26 @@ public class SupervisedRLM extends OneStepRetriever {
         termDistributions = new HashMap<>();
     }
 
-    int getDocOffset(String docId) throws Exception {
+    public AllRelRcds getAllRels() {
+        return rels;
+    }
+
+    public int getDocOffset(String docId) throws Exception {
         Query tq = new TermQuery(new Term(Constants.ID_FIELD, docId));
         TopDocs topDocs = searcher.search(tq, 1);
         return topDocs.scoreDocs[0].doc;
+    }
+
+    public static Document getDocument(IndexSearcher searcher, String docId) {
+        try {
+            Query tq = new TermQuery(new Term(Constants.ID_FIELD, docId));
+            TopDocs topDocs = searcher.search(tq, 1);
+            return searcher.getIndexReader().document(topDocs.scoreDocs[0].doc);
+        }
+        catch (Exception ex) {
+            ex.printStackTrace();
+            return null;
+        }
     }
 
     Map<String, Double> makeLMTermWts(String docId) throws Exception {
@@ -44,11 +61,11 @@ public class SupervisedRLM extends OneStepRetriever {
         return makeLMTermWts(docId, true);
     }
 
-    Map<String, Double> makeLMTermWts(String docId, boolean idfWeighting) throws Exception {
+    public Map<String, Double> makeLMTermWts(String docId, boolean idfWeighting) throws Exception {
         return makeLMTermWts(getDocOffset(docId), idfWeighting);
     }
 
-    Map<String, Double> makeLMTermWts(int docId, boolean idfWeighting) throws Exception {
+    public Map<String, Double> makeLMTermWts(int docId, boolean idfWeighting) throws Exception {
         BytesRef term;
         String termText;
         int tf;

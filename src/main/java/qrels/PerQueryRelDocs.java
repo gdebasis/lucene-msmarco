@@ -4,25 +4,33 @@ import java.util.stream.Collectors;
 
 public class PerQueryRelDocs {
     String qid;
-    Set<String> relSet; // keyed by docid, entry stores the rel value (>0)
+    Map<String, Integer> relMap; // keyed by docid, entry stores the rel value
 
     public PerQueryRelDocs(String qid) {
         this.qid = qid;
-        relSet = new HashSet<>();
+        relMap = new HashMap();
     }
 
     public void addTuple(String docId) {
-        relSet.add(docId);
+        relMap.put(docId, 1);
+    }
+
+    void addTuple(String docId, int rel) {
+        if (relMap.get(docId) != null)
+            return;
+        if (rel > 0) {
+            relMap.put(docId, rel);
+        }
     }
 
     public boolean isRel(String docName) {
-        return relSet.contains(docName);
+        return relMap.containsKey(docName);
     }
 
-    public Set<String> getRelDocs() { return relSet; }
+    public Set<String> getRelDocs() { return relMap.keySet(); }
 
     public String toString() {
-        return relSet
+        return relMap.keySet()
                 .stream()
                 .collect(Collectors.joining(", "));
     }

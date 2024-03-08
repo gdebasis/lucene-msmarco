@@ -3,13 +3,12 @@ package correlation;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
-import evaluator.AllRetrievedResults;
-import evaluator.RetrievedResults;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.*;
 import java.util.stream.Collectors;
+import qrels.*;
 
 class EvalData {
     String name;

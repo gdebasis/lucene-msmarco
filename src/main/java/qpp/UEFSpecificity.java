@@ -1,15 +1,14 @@
 package qpp;
 
-import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TotalHits;
 import correlation.OverlapStats;
-import evaluator.RetrievedResults;
 import experiments.Settings;
 import fdbk.RelevanceModelConditional;
 import fdbk.RelevanceModelIId;
 import retrieval.MsMarcoQuery;
+import qrels.*;
 
 import java.io.IOException;
 import java.util.*;

@@ -43,7 +43,9 @@ public class KNNRelModel extends SupervisedRLM {
 
     static Analyzer analyzer = MsMarcoIndexer.constructAnalyzer();
 
-    KNNRelModel(String qrelFile, String queryFile) throws Exception {
+    public IndexSearcher getQueryIndexSearcher() { return qIndexSearcher; }
+
+    public KNNRelModel(String qrelFile, String queryFile) throws Exception {
         super(qrelFile, queryFile);
         qIndexReader = DirectoryReader.open(FSDirectory.open(new File(Constants.MSMARCO_QUERY_INDEX).toPath()));
         qIndexSearcher = new IndexSearcher(qIndexReader);
@@ -370,11 +372,13 @@ public class KNNRelModel extends SupervisedRLM {
         }
     }
 
-    Map<String, Double> makeAvgLMDocModel(List<MsMarcoQuery> queries) throws Exception {
+    public Map<String, Double> makeAvgLMDocModel(List<MsMarcoQuery> queries) throws Exception {
         Map<String, Double> docModel, avgDocModel = new HashMap<>();
 
         for (MsMarcoQuery query: queries) {
-            PerQueryRelDocs relDocIds = rels.getRelInfo(query.qid);
+            PerQueryRelDocs relDocIds = query.relDocs;
+            if (relDocIds == null)
+                relDocIds = rels.getRelInfo(query.qid);
             if (relDocIds == null)
                 continue;
 

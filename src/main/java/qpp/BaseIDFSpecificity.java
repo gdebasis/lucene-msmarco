@@ -6,12 +6,12 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TopDocs;
-import evaluator.RetrievedResults;
 import retrieval.MsMarcoQuery;
 
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+import qrels.RetrievedResults;
 
 public class BaseIDFSpecificity implements QPPMethod {
     IndexReader reader;

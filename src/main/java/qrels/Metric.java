@@ -1,4 +1,4 @@
-package evaluator;
+package qrels;
 
 public enum Metric {
     AP,

@@ -30,13 +30,15 @@ public class OneStepRetriever {
     Similarity sim;
     Map<String, String> queries;
 
-    OneStepRetriever(String queryFile) throws Exception {
+    public OneStepRetriever(String queryFile) throws Exception {
         reader = DirectoryReader.open(FSDirectory.open(new File(Constants.MSMARCO_INDEX).toPath()));
         searcher = new IndexSearcher(reader);
         sim = new LMDirichletSimilarity(Constants.MU);
         searcher.setSimilarity(sim);
         queries = loadQueries(queryFile);
     }
+
+    public IndexSearcher getSearcher() { return searcher; }
 
     public Map<String, String> loadQueries(String queryFile) throws Exception {
         return
@@ -62,7 +64,6 @@ public class OneStepRetriever {
         }
         return (Query)qb.build();
     }
-
 
     public void retrieve() throws Exception {
         Map<String, String> testQueries = loadQueries(Constants.QUERY_FILE_TEST);

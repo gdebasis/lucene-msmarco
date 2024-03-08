@@ -23,7 +23,7 @@ public class FdbkTermStats extends KNNRelModel {
 
     public void computeFdbkTermWeights(int numTopDocs) throws Exception {
         AllRetrievedResults allRetrievedResults = new AllRetrievedResults(resFile);
-        Map<String, TopDocs> topDocsMap = allRetrievedResults.castToTopDocs(searcher);
+        Map<String, TopDocs> topDocsMap = allRetrievedResults.castToTopDocs();
 
         Map<String, String> testQueries = loadQueries(Constants.QUERY_FILE_TEST);
         testQueries

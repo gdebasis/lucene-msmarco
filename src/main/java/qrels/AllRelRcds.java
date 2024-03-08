@@ -1,31 +1,55 @@
 package qrels;
 
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TopDocs;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class AllRelRcds {
     String qrelsFile;
-    HashMap<String, PerQueryRelDocs> perQueryRels;
+    Map<String, PerQueryRelDocs> perQueryRels;
+    int totalNumRel;
+    Map<String, Boolean> inducedRel;    // a map from docid to a boolean
+    // which is true if each system retrieves this doc
+    // at rank < depth for that query
 
-    public AllRelRcds(String qrelsFile) throws Exception {
+    public AllRelRcds(String qrelsFile) {
         this.qrelsFile = qrelsFile;
         perQueryRels = new HashMap<>();
+        totalNumRel = 0;
         load();
     }
 
-    private void load() throws Exception {
-        FileReader fr = new FileReader(qrelsFile);
-        BufferedReader br = new BufferedReader(fr);
-        String line;
+    int getTotalNumRel() {
+        if (totalNumRel > 0)
+            return totalNumRel;
 
-        while ((line = br.readLine()) != null) {
-            storeRelRcd(line);
+        for (Map.Entry<String, PerQueryRelDocs> e : perQueryRels.entrySet()) {
+            PerQueryRelDocs perQryRelDocs = e.getValue();
+            totalNumRel += perQryRelDocs.relMap.size();
         }
-        br.close();
-        fr.close();
+        return totalNumRel;
+    }
+
+    private void load() {
+        try {
+            FileReader fr = new FileReader(qrelsFile);
+            BufferedReader br = new BufferedReader(fr);
+            String line;
+
+            while ((line = br.readLine()) != null) {
+                storeRelRcd(line);
+            }
+            br.close();
+            fr.close();
+        }
+        catch (Exception ex) { ex.printStackTrace(); }
     }
 
     void storeRelRcd(String line) {
@@ -36,20 +60,25 @@ public class AllRelRcds {
             relTuple = new PerQueryRelDocs(qid);
             perQueryRels.put(qid, relTuple);
         }
-        relTuple.addTuple(tokens[2]);
+        relTuple.addTuple(tokens[2], Integer.parseInt(tokens[3]));
     }
 
     public String toString() {
-        return perQueryRels
-                .values()
-                .stream()
-                .map(Object::toString)
-                .collect(Collectors.joining("\n"));
+        StringBuffer buff = new StringBuffer();
+        for (Map.Entry<String, PerQueryRelDocs> e : perQueryRels.entrySet()) {
+            PerQueryRelDocs perQryRelDocs = e.getValue();
+            buff.append(e.getKey()).append("\n");
+            for (Map.Entry<String, Integer> rel : perQryRelDocs.relMap.entrySet()) {
+                String docName = rel.getKey();
+                int relVal = rel.getValue();
+                buff.append(docName).append(",").append(relVal).append("\t");
+            }
+            buff.append("\n");
+        }
+        return buff.toString();
     }
 
     public PerQueryRelDocs getRelInfo(String qid) {
         return perQueryRels.get(qid);
     }
 }
-
-
