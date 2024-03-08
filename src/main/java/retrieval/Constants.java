@@ -41,8 +41,6 @@ public interface Constants {
     int ROCCHIO_NUM_NEGATIVE = 3;
     String TOPDOCS_FOLDER = "topdocs";
 
-    float QPP_JM_COREL_LAMBDA = 0.0f;
-    float QPP_JM_COREL_MU = 0.8f;
-    int QPP_JM_COREL_NUMNEIGHBORS = 3;
+    int QPP_JM_COREL_NUMNEIGHBORS = 5;
     int QPP_NUM_TOPK = 50;
 }

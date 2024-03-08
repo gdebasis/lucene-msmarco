@@ -39,19 +39,17 @@ public class KNN_NQCSpecificity extends NQCSpecificity {
         List<MsMarcoQuery> knnQueries = null;
         double baseQpp = 0, variantSpec = 0, colRelSpec = 0;
 
-        System.out.println("Input query: " + q.toString());
+        //System.out.println("Input query: " + q.toString());
 
         try {
-            if (lambda > 0 || mu > 0) {
-                knnQueries = q.retrieveSimilarQueries(
-                        knnRelModel.getAllRels(),
-                        knnRelModel.getSearcher(),
-                        knnRelModel.getQueryIndexSearcher(),
-                        numNeighbors)
-                ;
+            knnQueries = q.retrieveSimilarQueries(
+                    knnRelModel.getAllRels(),
+                    knnRelModel.getSearcher(),
+                    knnRelModel.getQueryIndexSearcher(),
+                    numNeighbors)
+            ;
 
-                knnQueries.stream().forEach(System.out::println);
-            }
+                //knnQueries.stream().forEach(System.out::println);
 
             baseQpp = baseModel.computeSpecificity(q, retInfo, topDocs, k);
             if (knnQueries != null) {
@@ -62,22 +60,23 @@ public class KNN_NQCSpecificity extends NQCSpecificity {
         }
         catch (Exception ex) { ex.printStackTrace(); }
 
-        return residualLinear * baseQpp +
-                lambda * variantSpec +
-                mu * colRelSpec;
+        return //residualLinear * baseQpp +
+                lambda * variantSpec + (1-lambda)*colRelSpec;
     }
 
     double variantSpecificity(MsMarcoQuery q, List<MsMarcoQuery> knnQueries,
                              RetrievedResults retInfo, TopDocs topDocs, int k) throws Exception {
         double specScore = 0;
+        double z = 0;
         // apply QPP base model on these estimated relevance scores
         for (MsMarcoQuery rq: knnQueries) {
             TopDocs topDocsRQ = searcher.search(rq.getQuery(), k);
-            RetrievedResults varInfo = new RetrievedResults(q.getId(), topDocsRQ);
-            specScore += rq.getRefSim() * baseModel.computeSpecificity(q, varInfo, topDocs, k);
+            RetrievedResults varInfo = new RetrievedResults(rq.getId(), topDocsRQ);
+            specScore += rq.getRefSim() * baseModel.computeSpecificity(rq, varInfo, topDocs, k);
+            z += rq.getRefSim();
         }
 
-        return specScore;
+        return z==0? baseModel.computeSpecificity(q, retInfo, topDocs, k): specScore/z;
     }
 
     double coRelsSpecificity(MsMarcoQuery q, List<MsMarcoQuery> knnQueries,
@@ -87,20 +86,28 @@ public class KNN_NQCSpecificity extends NQCSpecificity {
 
         int i = 1;
         double corelEstimate;
-        double corelEstimateAvg = 0;
+        //double corelEstimateAvg = 0;
+        double max = retInfo.getTuples().get(0).getScore();
 
         // apply QPP base model on these estimated relevance scores
         RetrievedResults coRelInfo = new RetrievedResults(q.getId());
+        double z = retInfo.getTuples().stream()
+                .map(x -> x.getScore())
+                .mapToDouble(Double::doubleValue)
+                .sum()
+        ;
+
         for (ResultTuple rtuple: retInfo.getTuples()) {
             thisDocTermWts = knnRelModel.makeLMTermWts(rtuple.getDocName(), true);
             corelEstimate = TermDistribution.cosineSim(knnDocTermWts, thisDocTermWts);
-            coRelInfo.addTuple(rtuple.getDocName(), i++, corelEstimate);
-            corelEstimateAvg += corelEstimate;
+            double ret_score = rtuple.getScore();
+            coRelInfo.addTuple(rtuple.getDocName(), i++, mu* corelEstimate + (1-mu)*ret_score/z);
+            //corelEstimateAvg += corelEstimate;
         }
 
-        //double corelSpec = baseModel.computeSpecificity(q, coRelInfo, topDocs, k);
-        //return corelSpec;
-        return corelEstimateAvg;
+        double corelSpec = baseModel.computeSpecificity(q, coRelInfo, topDocs, k);
+        return corelSpec;
+        //return corelEstimateAvg;
     }
 
 }
