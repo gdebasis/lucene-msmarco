@@ -14,7 +14,7 @@ public interface Constants {
     //String QUERY_FILE_TEST = "data/fever.tsv";
     //String QUERY_FILE_TEST = "data/queries.dev.small.tsv";
     String QRELS_TEST = "data/trecdl/pass_2019.qrels";
-    String RES_FILE = "res.txt";
+    String RES_FILE = "ColBERT-PRF-VirtualAppendix/BM25/BM25.2019.res";
     String RES_FILE_RERANKED = "res_rlm.txt";
     String SAVED_MODEL = "model.tsv";
     int NUM_WANTED = 100;
@@ -41,6 +41,8 @@ public interface Constants {
     int ROCCHIO_NUM_NEGATIVE = 3;
     String TOPDOCS_FOLDER = "topdocs";
 
-    int QPP_JM_COREL_NUMNEIGHBORS = 5;
+    int QPP_JM_COREL_NUMNEIGHBORS = 1;
     int QPP_NUM_TOPK = 50;
+    int EVAL_MIN_REL = 2;
+    int NDCG_CUTOFF = 10;
 }

@@ -4,9 +4,12 @@ import experiments.Settings;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
+import retrieval.Constants;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class RetrievedResults implements Comparable<RetrievedResults> {
@@ -22,6 +25,8 @@ public class RetrievedResults implements Comparable<RetrievedResults> {
         avgP = -1;
         numRelRet = -1;
     }
+
+    boolean isRel(ResultTuple tuple) { return tuple.rel >= Constants.EVAL_MIN_REL; }
 
     public RetrievedResults(String qid, TopDocs topDocs) {
         this.qid = qid;
@@ -66,8 +71,6 @@ public class RetrievedResults implements Comparable<RetrievedResults> {
     }
 
     void fillRelInfo(PerQueryRelDocs relInfo) {
-        String qid = relInfo.qid;
-
         for (ResultTuple rt : rtuples) {
             Integer relIntObj = relInfo.relMap.get(rt.docName);
             rt.rel = relIntObj == null? 0 : relIntObj.intValue();
@@ -75,15 +78,26 @@ public class RetrievedResults implements Comparable<RetrievedResults> {
         this.relInfo = relInfo;
     }
 
+    int getNumRel() {
+        int numRel = 0;
+        for (Map.Entry<String, Integer> e: relInfo.relMap.entrySet()) {
+            if (e.getValue() >= Constants.EVAL_MIN_REL)
+                numRel++;
+        }
+        return numRel;
+    }
+
     float computeAP() {
         if (avgP > -1)
             return avgP;
 
         float prec = 0;
-        int numRel = relInfo.relMap.size();
+
+        int numRel = getNumRel();
         int numRelSeen = 0;
+
         for (ResultTuple tuple : this.rtuples) {
-            if (tuple.rel < 1)
+            if (!isRel(tuple))
                 continue;
             numRelSeen++;
             prec += numRelSeen/(float)(tuple.rank);
@@ -101,7 +115,7 @@ public class RetrievedResults implements Comparable<RetrievedResults> {
         for (ResultTuple tuple : this.rtuples) {
             if (k>0 && numSeen >= k)
                 break;
-            if (tuple.rel >= 1)
+            if (isRel(tuple))
                 numRelSeen++;
             numSeen++;
         }
@@ -113,7 +127,7 @@ public class RetrievedResults implements Comparable<RetrievedResults> {
             return numRelRet;
         int numRelSeen = 0;
         for (ResultTuple tuple : this.rtuples) {
-            if (tuple.rel < 1)
+            if (!isRel(tuple))
                 continue;
             numRelSeen++;
         }
@@ -121,43 +135,36 @@ public class RetrievedResults implements Comparable<RetrievedResults> {
         return numRelSeen/(float)relInfo.relMap.size();
     }
 
-    float computeNdcg() {
-        float dcg = 0;
-        float idcg = calculateIdcg(relInfo.relMap.size());
-        if (idcg == 0) {
+    float computeNdcg(int cutoff) {
+        float idcg = calcDCG(
+                relInfo.relMap.values().stream()
+                .sorted(Comparator.reverseOrder())  // more relevant at a smaller rank value is ideal
+                .collect(Collectors.toList()
+        ));
+        if (idcg == 0)
             return 0;
-        }
 
-        for (int i = 0; i < this.rtuples.size(); i++) {
-            ResultTuple predictedItem = this.rtuples.get(i);
-            if (!relInfo.relMap.containsKey(predictedItem.docName))
-                continue;
-
-            // the relevance in the DCG part is either 1 (the item is contained in real data)
-            // or 0 (item is not contained in the real data)
-            int itemRelevance = 1;
-            if (!relInfo.relMap.containsKey(predictedItem.docName))
-                itemRelevance = 0;
-
-            // compute NDCG
-            int rank = i + 1;
-            dcg += (Math.pow(2, itemRelevance) - 1.0) * (Math.log(2) / Math.log(rank + 1));
-        }
-
-        return dcg / idcg;
+        float dcg = calcDCG(
+                this.rtuples.stream()
+                .limit(cutoff)
+                .map(x->x.rel)
+                .collect(Collectors.toList()
+        ));
+        return dcg/idcg;
     }
 
-    float calculateIdcg(int n) {
-        float idcg = 0;
-        // if can get relevance for every item should replace the relevance score at this point, else
-        // every item in the ideal case has relevance of 1
-        int itemRelevance = 1;
+    double log2(float x) {
+        return Math.log(x)/Math.log(2);
+    }
 
-        for (int i = 0; i < n; i++){
-            idcg += (Math.pow(2, itemRelevance) - 1.0) * ( Math.log(2) / Math.log(i + 2) );
+    float calcDCG(List<Integer> relLabels) {
+        int rank = 1;
+        float ndcg = 0;
+        for (Integer relLabel: relLabels) {
+            ndcg += (float)relLabel.intValue()/log2(rank+1);
+            rank++;
         }
-
-        return idcg;
+        return ndcg;
     }
 
     @Override

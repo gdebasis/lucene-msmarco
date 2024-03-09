@@ -1,4 +1,6 @@
 package qrels;
+import retrieval.Constants;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -24,7 +26,10 @@ public class PerQueryRelDocs {
     }
 
     public boolean isRel(String docName) {
-        return relMap.containsKey(docName);
+        Integer relLabel = relMap.get(docName);
+        if (relLabel==null)
+            return false;
+        return relLabel.intValue() >= Constants.EVAL_MIN_REL;
     }
 
     public Set<String> getRelDocs() { return relMap.keySet(); }

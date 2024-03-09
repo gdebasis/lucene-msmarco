@@ -15,9 +15,6 @@ public class AllRelRcds {
     String qrelsFile;
     Map<String, PerQueryRelDocs> perQueryRels;
     int totalNumRel;
-    Map<String, Boolean> inducedRel;    // a map from docid to a boolean
-    // which is true if each system retrieves this doc
-    // at rank < depth for that query
 
     public AllRelRcds(String qrelsFile) {
         this.qrelsFile = qrelsFile;
@@ -60,7 +57,9 @@ public class AllRelRcds {
             relTuple = new PerQueryRelDocs(qid);
             perQueryRels.put(qid, relTuple);
         }
-        relTuple.addTuple(tokens[2], Integer.parseInt(tokens[3]));
+        int rel = Integer.parseInt(tokens[3]);
+        if (rel > 0)
+            relTuple.addTuple(tokens[2], Integer.parseInt(tokens[3]));
     }
 
     public String toString() {

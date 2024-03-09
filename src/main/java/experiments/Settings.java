@@ -34,8 +34,9 @@ import java.util.Properties;
 public class Settings {
     static IndexReader                       reader;
     static IndexSearcher                     searcher;
-    public static String RES_FILE = "/tmp/res";
     public static int SEED = 314152;
+    public static HashMap<String, Integer> docId2OffsetMap = new HashMap<>();
+    public static HashMap<Integer, String> offset2DocIdMap = new HashMap<>();
 
     static public void init(IndexSearcher searcher) {
         reader = searcher.getIndexReader();
@@ -44,7 +45,12 @@ public class Settings {
 
     public static String getDocIdFromOffset(int docOffset) {
         try {
-            return reader.document(docOffset).get(Constants.ID_FIELD);
+            String docName = offset2DocIdMap.get(docOffset);
+            if (docName == null) {
+                docName = reader.document(docOffset).get(Constants.ID_FIELD);
+                offset2DocIdMap.put(docOffset, docName);
+            }
+            return docName;
         }
         catch (Exception ex) { ex.printStackTrace(); }
         return null;
@@ -52,9 +58,14 @@ public class Settings {
 
     public static int getDocOffsetFromId(String docId) {
         try {
-            Query query = new TermQuery(new Term(Constants.ID_FIELD, docId));
-            TopDocs topDocs = searcher.search(query, 1);
-            return topDocs.scoreDocs[0].doc;
+            Integer offset = docId2OffsetMap.get(docId);
+            if (offset == null) {
+                Query query = new TermQuery(new Term(Constants.ID_FIELD, docId));
+                TopDocs topDocs = searcher.search(query, 1);
+                offset = topDocs.scoreDocs[0].doc;
+                docId2OffsetMap.put(docId, offset);
+            }
+            return offset.intValue();
         }
         catch (Exception ex) { ex.printStackTrace(); }
         return -1;

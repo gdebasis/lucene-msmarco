@@ -179,18 +179,12 @@ public class QPPEvaluator {
         int numQueries = queries.size();
         double[] evaluatedMetricValues = new double[numQueries];
 
-        FileWriter fw = new FileWriter(Settings.RES_FILE);
-        BufferedWriter bw = new BufferedWriter(fw);
-
         for (MsMarcoQuery query : queries) {
             TopDocs topDocs = retrieve(query, sim, cutoff);
             topDocsMap.put(query.getId(), topDocs);
         }
-        bw.flush();
-        bw.close();
-        fw.close();
 
-        Evaluator evaluator = new Evaluator(qrelsFile, Settings.RES_FILE); // load ret and rel
+        Evaluator evaluator = new Evaluator(qrelsFile, Constants.RES_FILE); // load ret and rel
 
         int i=0;
         for (MsMarcoQuery query : queries) {

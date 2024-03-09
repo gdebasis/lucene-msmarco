@@ -11,6 +11,7 @@ public class AllRetrievedResults {
     Map<String, RetrievedResults> allRetMap;
     String resFile;
     AllRelRcds allRelInfo;
+    int zeroIndexedAdjustment;
 
     public AllRetrievedResults(String resFile) {
         String line;
@@ -49,8 +50,12 @@ public class AllRetrievedResults {
         if (res == null) {
             res = new RetrievedResults(qid);
             allRetMap.put(qid, res);
+            int rank = Integer.parseInt(tokens[3]);
+            zeroIndexedAdjustment = rank==0? 1: 0;
         }
-        res.addTuple(tokens[2], Integer.parseInt(tokens[3]), Double.parseDouble(tokens[4]));
+        res.addTuple(tokens[2],
+                Integer.parseInt(tokens[3]) + zeroIndexedAdjustment,
+                Double.parseDouble(tokens[4]));
     }
 
     public String toString() {
@@ -97,7 +102,7 @@ public class AllRetrievedResults {
             case AP: res = rr.computeAP(); break;
             case P_10: res = rr.precAtTop(10); break;
             case Recall: res = rr.computeRecall(); break;
-            case nDCG: res = rr.computeNdcg();
+            case nDCG: res = rr.computeNdcg(Constants.NDCG_CUTOFF);
         }
         return res;
     }
@@ -105,23 +110,23 @@ public class AllRetrievedResults {
     String computeAll() {
         StringBuffer buff = new StringBuffer();
         float map = 0f;
-        float gm_ap = 0f;
         float avgRecall = 0f;
+        float avgNDCG = 0f;
         float numQueries = (float)allRetMap.size();
         float pAt5 = 0f;
 
         for (Map.Entry<String, RetrievedResults> e : allRetMap.entrySet()) {
             RetrievedResults res = e.getValue();
-            float ap = res.computeAP();
-            map += ap;
-            gm_ap += ap>0? Math.log(ap): 0;
+            map += res.computeAP();
             pAt5 += res.precAtTop(5);
+            avgRecall += res.computeRecall();
+            avgNDCG += res.computeNdcg(Constants.NDCG_CUTOFF);
         }
 
         buff.append("recall:\t").append(avgRecall/(float)allRelInfo.getTotalNumRel()).append("\n");
         buff.append("map:\t").append(map/numQueries).append("\n");
-        buff.append("gmap:\t").append((float)Math.exp(gm_ap/numQueries)).append("\n");
         buff.append("P@5:\t").append(pAt5/numQueries).append("\n");
+        buff.append("nDCG@10:\t").append(avgNDCG/numQueries).append("\n");
 
         return buff.toString();
     }

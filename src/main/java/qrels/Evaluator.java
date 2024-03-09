@@ -1,5 +1,7 @@
 package qrels;
 
+import retrieval.Constants;
+
 import java.io.FileReader;
 import java.util.Properties;
 
@@ -12,12 +14,6 @@ public class Evaluator {
         relRcds = new AllRelRcds(qrelsFile);
         retRcds = new AllRetrievedResults(resFile);
         fillRelInfo();
-    }
-
-    public Evaluator(Properties prop) throws Exception {
-        this(prop.getProperty("qrels.file"),
-                prop.getProperty("res.file")
-        );
     }
 
     public RetrievedResults getRetrievedResultsForQueryId(String qid) {
@@ -45,16 +41,9 @@ public class Evaluator {
     }
 
     public static void main(String[] args) {
-        if (args.length < 1) {
-            args = new String[1];
-            args[0] = "init.properties";
-        }
         try {
-            Properties prop = new Properties();
-            prop.load(new FileReader(args[0]));
-
-            String qrelsFile = prop.getProperty("qrels.file");
-            String resFile = prop.getProperty("res.file");
+            String qrelsFile = Constants.QRELS_TEST;
+            String resFile = Constants.RES_FILE;
 
             Evaluator evaluator = new Evaluator(qrelsFile, resFile);
             System.out.println(evaluator.computeAll());
