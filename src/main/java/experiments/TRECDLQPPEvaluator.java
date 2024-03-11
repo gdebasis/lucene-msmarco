@@ -82,6 +82,7 @@ public class TRECDLQPPEvaluator {
             String testQrelsFile,
             String trainResFile,
             String testResFile,
+            int maxK,
             float maxL, // set this and maxM to 0 for NQC baseline
             float maxM // set this to 0 for JM baseline
     )
@@ -100,7 +101,7 @@ public class TRECDLQPPEvaluator {
 
         OptimalHyperParams p = new OptimalHyperParams();
 
-        for (int k=1; k<=3; k++) {
+        for (int k=1; k<=maxK; k++) {
             for (float l = 0; l <= maxL; l += .2f) {
                 for (float m = 0; m <= maxM; m += .2f) {
                     double kendals = runExperiment(
@@ -150,6 +151,7 @@ public class TRECDLQPPEvaluator {
 
         Metric m = Metric.AP;
         float maxL = 1, maxM = 1;
+        int maxK = 1;
         if (args[2].equals("nqc")) {
             maxL = 0;
             maxM = 0;
@@ -158,6 +160,8 @@ public class TRECDLQPPEvaluator {
             maxL = 1;
             maxM = 0;
         }
+        else
+            maxK = 3;
 
         try {
             OneStepRetriever retriever = new OneStepRetriever(Constants.QUERY_FILE_TEST);
@@ -168,11 +172,11 @@ public class TRECDLQPPEvaluator {
             double kendalsOnTest = trainAndTest(retriever,
                     QUERY_FILES[0], QRELS_FILES[0],
                     QUERY_FILES[1], QRELS_FILES[1],
-                    args[0], args[1], maxL, maxM);
+                    args[0], args[1], maxK, maxL, maxM);
             double kendalsOnTrain = trainAndTest(retriever,
                     QUERY_FILES[1], QRELS_FILES[1],
                     QUERY_FILES[0], QRELS_FILES[0],
-                    args[1], args[0], maxL, maxM);
+                    args[1], args[0], maxK, maxL, maxM);
 
             double kendals = 0.5*(kendalsOnTrain + kendalsOnTest);
             System.out.println(String.format("Target Metric: %s, tau = %.4f", m.toString(), kendals));
