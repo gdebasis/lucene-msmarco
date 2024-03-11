@@ -16,6 +16,8 @@ public class Evaluator {
         fillRelInfo();
     }
 
+    public AllRetrievedResults getAllRetrievedResults() { return retRcds; }
+
     public RetrievedResults getRetrievedResultsForQueryId(String qid) {
         return retRcds.getRetrievedResultsForQueryId(qid);
     }

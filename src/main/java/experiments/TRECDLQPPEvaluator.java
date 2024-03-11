@@ -86,7 +86,7 @@ public class TRECDLQPPEvaluator {
             String testResFile) throws Exception {
 
         IndexSearcher searcher = retriever.getSearcher();
-        KNNRelModel knnRelModel = new KNNRelModel(trainQrelsFile, trainQueryFile);
+        KNNRelModel knnRelModel = new KNNRelModel(Constants.QRELS_TRAIN, trainQueryFile);
 
         Evaluator evaluatorTrain = new Evaluator(trainQrelsFile, trainResFile); // load ret and rel
         QPPEvaluator qppEvaluator = new QPPEvaluator(
@@ -94,8 +94,7 @@ public class TRECDLQPPEvaluator {
                 new KendalCorrelation(), retriever.getSearcher(), Constants.QPP_NUM_TOPK);
         List<MsMarcoQuery> trainQueries = qppEvaluator.constructQueries(trainQueryFile);
 
-        AllRetrievedResults allRetrievedResults = new AllRetrievedResults(trainResFile);
-        Map<String, TopDocs> topDocsMap = allRetrievedResults.castToTopDocs();
+        Map<String, TopDocs> topDocsMap = evaluatorTrain.getAllRetrievedResults().castToTopDocs();
 
         OptimalHyperParams p = new OptimalHyperParams();
 
@@ -123,10 +122,9 @@ public class TRECDLQPPEvaluator {
         QPPEvaluator qppEvaluatorTest = new QPPEvaluator(
                 testQueryFile, testQrelsFile,
                 new KendalCorrelation(), retriever.getSearcher(), Constants.QPP_NUM_TOPK);
-        List<MsMarcoQuery> testQueries = qppEvaluator.constructQueries(testQueryFile);
+        List<MsMarcoQuery> testQueries = qppEvaluatorTest.constructQueries(testQueryFile);
 
-        AllRetrievedResults allRetrievedResultsTest = new AllRetrievedResults(testResFile);
-        Map<String, TopDocs> topDocsMapTest = allRetrievedResultsTest.castToTopDocs();
+        Map<String, TopDocs> topDocsMapTest = evaluatorTest.getAllRetrievedResults().castToTopDocs();
         double kendals_Test = runExperiment(
                 searcher, knnRelModelTest,
                 evaluatorTest, testQueries, topDocsMapTest, p.l, p.m, p.k);
@@ -161,10 +159,51 @@ public class TRECDLQPPEvaluator {
             double kendals = 0.5*(kendalsOnTrain + kendalsOnTest);
 
             System.out.println(String.format("Target Metric: %s, tau = %.4f", m.toString(), kendals));
-
-        } catch (Exception ex) {
+        }
+        catch (Exception ex) {
             ex.printStackTrace();
         }
     }
+
+    static void runSingleExperiment(OneStepRetriever retriever) {
+        QPPMethod qppMethod = new KNN_NQCSpecificity(
+                new NQCSpecificity(retriever.getSearcher()),
+                //new UEFSpecificity(new NQCSpecificity(searcher)),
+                retriever.getSearcher(),
+                new KNNRelModel(Constants.QRELS_TRAIN, Constants.QUERY_FILE_TEST),
+                Constants.QPP_JM_COREL_NUMNEIGHBORS,
+                0.2f,
+                0.6f
+        );
+
+        Evaluator evaluator = new Evaluator(Constants.QRELS_TEST, "ColBERT-PRF-VirtualAppendix/BM25/BM25.2019.res"); // load ret and rel
+        QPPEvaluator qppEvaluator = new QPPEvaluator(
+                Constants.QUERY_FILE_TEST, Constants.QRELS_TEST,
+                new KendalCorrelation(), retriever.getSearcher(), Constants.QPP_NUM_TOPK);
+        List<MsMarcoQuery> queries = qppEvaluator.constructQueries(Constants.QUERY_FILE_TEST);
+        int numQueries = queries.size();
+
+        Map<String, TopDocs> topDocsMap = evaluator.getAllRetrievedResults().castToTopDocs();
+
+        double[] qppEstimates = new double[numQueries];
+        double[] evaluatedMetricValues = new double[numQueries];
+
+        int i = 0;
+        for (MsMarcoQuery query : queries) {
+            RetrievedResults rr = evaluator.getRetrievedResultsForQueryId(query.getId());
+            TopDocs topDocs = topDocsMap.get(query.getId());
+
+            evaluatedMetricValues[i] = evaluator.compute(query.getId(), m);
+            qppEstimates[i] = (float) qppMethod.computeSpecificity(
+                    query, rr, topDocs, Constants.QPP_NUM_TOPK);
+
+            System.out.println(String.format("%s: %s = %.4f, QPP = %.4f", query.getId(),
+                    m.toString(), evaluatedMetricValues[i], qppEstimates[i]));
+            i++;
+        }
+        double kendals = new KendalCorrelation().correlation(evaluatedMetricValues, qppEstimates);
+        System.out.println(String.format("Target Metric: %s, tau = %.4f", m.toString(), kendals));
+    }
+
 
 }
