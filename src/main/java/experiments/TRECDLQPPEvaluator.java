@@ -29,8 +29,6 @@ class OptimalHyperParams {
 }
 
 public class TRECDLQPPEvaluator {
-    static float l, m;
-    static int k;
     static String[] QUERY_FILES = {"data/trecdl/pass_2019.queries", "data/trecdl/pass_2020.queries"};
     static String[] QRELS_FILES = {"data/trecdl/pass_2019.qrels", "data/trecdl/pass_2020.qrels"};
 
