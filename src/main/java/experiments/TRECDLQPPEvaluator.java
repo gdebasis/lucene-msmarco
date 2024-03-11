@@ -187,10 +187,10 @@ public class TRECDLQPPEvaluator {
 
         if (args.length < 5) {
             System.out.println("Required arguments: <res file DL 19> <res file DL 20> <method (nqc/jm/corel)> <metric (ap/ndcg)> <uef/nqc>");
-            args = new String[4];
-            args[0] = "ColBERT-PRF-VirtualAppendix/BM25/BM25.2019.res";
-            args[1] = "ColBERT-PRF-VirtualAppendix/BM25/BM25.2020.res";
-            args[2] = "jm";
+            args = new String[5];
+            args[0] = "runs/bm25.mt5.dl19.100";
+            args[1] = "runs/bm25.mt5.dl20.100";
+            args[2] = "nqc";
             args[3] = "ap";
             args[4] = "nqc";
         }
