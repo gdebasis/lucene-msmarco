@@ -33,17 +33,18 @@ public class TRECDLQPPEvaluator {
     static String[] QRELS_FILES = {"data/trecdl/pass_2019.qrels", "data/trecdl/pass_2020.qrels"};
 
     static double runExperiment(
+            String baseQPPModelName, // nqc/uef
             IndexSearcher searcher,
             KNNRelModel knnRelModel,
             Evaluator evaluator,
             List<MsMarcoQuery> queries,
-            Map<String, TopDocs> topDocsMap, float lambda, float mu, int numNeighbors) {
+            Map<String, TopDocs> topDocsMap, float lambda, float mu, int numNeighbors, Metric targetMetric) {
 
         double kendals = 0;
 
+        QPPMethod baseModel = baseQPPModelName.equals("nqc")? new NQCSpecificity(searcher): new UEFSpecificity(new NQCSpecificity(searcher));
         QPPMethod qppMethod = new KNN_NQCSpecificity(
-                new NQCSpecificity(searcher),
-                //new UEFSpecificity(new NQCSpecificity(searcher)),
+                baseModel,
                 searcher,
                 knnRelModel,
                 numNeighbors,
@@ -60,7 +61,7 @@ public class TRECDLQPPEvaluator {
             RetrievedResults rr = evaluator.getRetrievedResultsForQueryId(query.getId());
             TopDocs topDocs = topDocsMap.get(query.getId());
 
-            evaluatedMetricValues[i] = evaluator.compute(query.getId(), Metric.AP);
+            evaluatedMetricValues[i] = evaluator.compute(query.getId(), targetMetric);
             qppEstimates[i] = (float) qppMethod.computeSpecificity(
                     query, rr, topDocs, Constants.QPP_NUM_TOPK);
 
@@ -75,7 +76,9 @@ public class TRECDLQPPEvaluator {
     }
 
     static double trainAndTest(
+            String baseModelName,
             OneStepRetriever retriever,
+            Metric targetMetric,
             String trainQueryFile,
             String trainQrelsFile,
             String testQueryFile,
@@ -104,9 +107,9 @@ public class TRECDLQPPEvaluator {
         for (int k=1; k<=maxK; k++) {
             for (float l = 0; l <= maxL; l += .2f) {
                 for (float m = 0; m <= maxM; m += .2f) {
-                    double kendals = runExperiment(
+                    double kendals = runExperiment(baseModelName,
                             searcher, knnRelModel, evaluatorTrain,
-                            trainQueries, topDocsMap, l, m, k);
+                            trainQueries, topDocsMap, l, m, k, targetMetric);
 
                     System.out.println(String.format("Train on %s -- (%.1f, %.1f, %d): tau = %.4f", trainQueryFile, l, m, k, kendals));
                     if (kendals > p.kendals) {
@@ -130,64 +133,16 @@ public class TRECDLQPPEvaluator {
         List<MsMarcoQuery> testQueries = qppEvaluatorTest.constructQueries(testQueryFile); // these queries are different from train queries
 
         Map<String, TopDocs> topDocsMapTest = evaluatorTest.getAllRetrievedResults().castToTopDocs();
-        double kendals_Test = runExperiment(
+        double kendals_Test = runExperiment(baseModelName,
                 searcher, knnRelModelTest,
-                evaluatorTest, testQueries, topDocsMapTest, p.l, p.m, p.k);
+                evaluatorTest, testQueries, topDocsMapTest, p.l, p.m, p.k, targetMetric);
 
         System.out.println(String.format("Kendal's on %s with lambda=%.1f, mu=%.1f, k=%d: %.4f", testQueryFile, p.l, p.m, p.k, kendals_Test));
 
         return kendals_Test;
     }
 
-
-    public static void main(String[] args) {
-
-        if (args.length < 3) {
-            System.out.println("Required arguments: <res file DL 19> <res file DL 20> <method (nqc/jm/corel)>");
-            args = new String[3];
-            args[0] = "ColBERT-PRF-VirtualAppendix/BM25/BM25.2019.res";
-            args[1] = "ColBERT-PRF-VirtualAppendix/BM25/BM25.2020.res";
-            args[2] = "nqc";
-        }
-
-        Metric m = Metric.AP;
-        float maxL = 1, maxM = 1;
-        int maxK = 1;
-        if (args[2].equals("nqc")) {
-            maxL = 0;
-            maxM = 0;
-        }
-        else if (args[2].equals("jm")) {
-            maxL = 1;
-            maxM = 0;
-        }
-        else
-            maxK = 3;
-
-        try {
-            OneStepRetriever retriever = new OneStepRetriever(Constants.QUERY_FILE_TEST);
-            Settings.init(retriever.getSearcher());
-
-            //runSingleExperiment(retriever, Metric.AP);
-
-            double kendalsOnTest = trainAndTest(retriever,
-                    QUERY_FILES[0], QRELS_FILES[0],
-                    QUERY_FILES[1], QRELS_FILES[1],
-                    args[0], args[1], maxK, maxL, maxM);
-            double kendalsOnTrain = trainAndTest(retriever,
-                    QUERY_FILES[1], QRELS_FILES[1],
-                    QUERY_FILES[0], QRELS_FILES[0],
-                    args[1], args[0], maxK, maxL, maxM);
-
-            double kendals = 0.5*(kendalsOnTrain + kendalsOnTest);
-            System.out.println(String.format("Target Metric: %s, tau = %.4f", m.toString(), kendals));
-        }
-        catch (Exception ex) {
-            ex.printStackTrace();
-        }
-    }
-
-    static void runSingleExperiment(OneStepRetriever retriever, Metric m) throws Exception {
+    static void runSingleExperiment(OneStepRetriever retriever, Metric targetMetric) throws Exception {
         QPPMethod qppMethod = new KNN_NQCSpecificity(
                 new NQCSpecificity(retriever.getSearcher()),
                 //new UEFSpecificity(new NQCSpecificity(searcher)),
@@ -215,17 +170,67 @@ public class TRECDLQPPEvaluator {
             RetrievedResults rr = evaluator.getRetrievedResultsForQueryId(query.getId());
             TopDocs topDocs = topDocsMap.get(query.getId());
 
-            evaluatedMetricValues[i] = evaluator.compute(query.getId(), m);
+            evaluatedMetricValues[i] = evaluator.compute(query.getId(), targetMetric);
             qppEstimates[i] = (float) qppMethod.computeSpecificity(
                     query, rr, topDocs, Constants.QPP_NUM_TOPK);
 
             System.out.println(String.format("%s: %s = %.4f, QPP = %.4f", query.getId(),
-                    m.toString(), evaluatedMetricValues[i], qppEstimates[i]));
+                    targetMetric.toString(), evaluatedMetricValues[i], qppEstimates[i]));
             i++;
         }
         double kendals = new KendalCorrelation().correlation(evaluatedMetricValues, qppEstimates);
-        System.out.println(String.format("Target Metric: %s, tau = %.4f", m.toString(), kendals));
+        System.out.println(String.format("Target Metric: %s, tau = %.4f", targetMetric.toString(), kendals));
     }
 
+
+    public static void main(String[] args) {
+
+        if (args.length < 5) {
+            System.out.println("Required arguments: <res file DL 19> <res file DL 20> <method (nqc/jm/corel)> <metric (ap/ndcg)> <uef/nqc>");
+            args = new String[4];
+            args[0] = "ColBERT-PRF-VirtualAppendix/BM25/BM25.2019.res";
+            args[1] = "ColBERT-PRF-VirtualAppendix/BM25/BM25.2020.res";
+            args[2] = "jm";
+            args[3] = "ap";
+            args[4] = "nqc";
+        }
+
+        Metric targetMetric = args[3].equals("ap")? Metric.AP : Metric.nDCG;
+        float maxL = 1, maxM = 1;
+        int maxK = 1;
+        if (args[2].equals("nqc")) {
+            maxL = 0;
+            maxM = 0;
+        }
+        else if (args[2].equals("jm")) {
+            maxL = 1;
+            maxM = 0;
+            maxK = 3;
+        }
+        else
+            maxK = 3;
+
+        try {
+            OneStepRetriever retriever = new OneStepRetriever(Constants.QUERY_FILE_TEST);
+            Settings.init(retriever.getSearcher());
+
+            //runSingleExperiment(retriever, Metric.AP);
+
+            double kendalsOnTest = trainAndTest(args[4], retriever, targetMetric,
+                    QUERY_FILES[0], QRELS_FILES[0],
+                    QUERY_FILES[1], QRELS_FILES[1],
+                    args[0], args[1], maxK, maxL, maxM);
+            double kendalsOnTrain = trainAndTest(args[4], retriever, targetMetric,
+                    QUERY_FILES[1], QRELS_FILES[1],
+                    QUERY_FILES[0], QRELS_FILES[0],
+                    args[1], args[0], maxK, maxL, maxM);
+
+            double kendals = 0.5*(kendalsOnTrain + kendalsOnTest);
+            System.out.println(String.format("Target Metric: %s, tau = %.4f", targetMetric.toString(), kendals));
+        }
+        catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
 
 }

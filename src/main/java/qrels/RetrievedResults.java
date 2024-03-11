@@ -136,20 +136,27 @@ public class RetrievedResults implements Comparable<RetrievedResults> {
     }
 
     float computeNdcg(int cutoff) {
-        float idcg = calcDCG(
-                relInfo.relMap.values().stream()
+        List<Integer> rels =
+            relInfo.relMap.values()
+                .stream()
                 .sorted(Comparator.reverseOrder())  // more relevant at a smaller rank value is ideal
-                .collect(Collectors.toList()
-        ));
+                .limit(cutoff)
+                .collect(Collectors.toList());
+
+        float idcg = calcDCG(rels);
         if (idcg == 0)
             return 0;
 
-        float dcg = calcDCG(
-                this.rtuples.stream()
+        List<Integer> rets = this.rtuples.stream()
                 .limit(cutoff)
                 .map(x->x.rel)
-                .collect(Collectors.toList()
-        ));
+                .collect(Collectors.toList());
+        float dcg = calcDCG(rets);
+
+        //System.out.println(rels);
+        //System.out.println(rets);
+
+        //System.out.println(String.format("%.4f %.4f", dcg, idcg));
         return dcg/idcg;
     }
 

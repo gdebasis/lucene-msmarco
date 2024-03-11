@@ -17,7 +17,7 @@ public interface Constants {
     String RES_FILE = "ColBERT-PRF-VirtualAppendix/BM25/BM25.2019.res";
     String RES_FILE_RERANKED = "res_rlm.txt";
     String SAVED_MODEL = "model.tsv";
-    int NUM_WANTED = 100;
+    int NUM_WANTED = 50;
     float LAMBDA = 0.9f;
     float LAMBDA_ODDS = Constants.LAMBDA/(1-Constants.LAMBDA);
     int NUM_TOP_TERMS = 5;

@@ -53,9 +53,10 @@ public class AllRetrievedResults {
             int rank = Integer.parseInt(tokens[3]);
             zeroIndexedAdjustment = rank==0? 1: 0;
         }
-        res.addTuple(tokens[2],
-                Integer.parseInt(tokens[3]) + zeroIndexedAdjustment,
-                Double.parseDouble(tokens[4]));
+        if (res.rtuples.size() < Constants.NUM_WANTED)
+            res.addTuple(tokens[2],
+                    Integer.parseInt(tokens[3]) + zeroIndexedAdjustment,
+                    Double.parseDouble(tokens[4]));
     }
 
     public String toString() {
