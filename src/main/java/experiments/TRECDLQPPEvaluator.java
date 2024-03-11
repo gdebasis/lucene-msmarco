@@ -108,11 +108,12 @@ public class TRECDLQPPEvaluator {
                             searcher, knnRelModel, evaluatorTrain,
                             trainQueries, topDocsMap, l, m, k);
 
-                    System.out.println(String.format("Train on %s -- (%.1f, %.1f): tau = %.4f", trainQueryFile, l, m, kendals));
+                    System.out.println(String.format("Train on %s -- (%.1f, %.1f, %d): tau = %.4f", trainQueryFile, l, m, k, kendals));
                     if (kendals > p.kendals) {
                         p.l = l;
                         p.m = m;
                         p.k = k;
+                        p.kendals = kendals; // keep track of max
                     }
                 }
             }
