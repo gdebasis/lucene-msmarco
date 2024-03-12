@@ -225,8 +225,8 @@ public class TRECDLQPPEvaluator {
             OneStepRetriever retriever = new OneStepRetriever(Constants.QUERY_FILE_TEST);
             Settings.init(retriever.getSearcher());
 
-            runSingleExperiment(retriever, Metric.AP);
-            System.exit(0);
+            //runSingleExperiment(retriever, Metric.AP);
+            //System.exit(0);
 
             double kendalsOnTest = trainAndTest(args[4], retriever, targetMetric,
                     QUERY_FILES[0], QRELS_FILES[0],
