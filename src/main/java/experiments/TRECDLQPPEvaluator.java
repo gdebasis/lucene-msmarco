@@ -143,7 +143,9 @@ public class TRECDLQPPEvaluator {
                 searcher, knnRelModelTest,
                 evaluatorTest, testQueries, topDocsMapTest, p.l, p.m, p.numVariants, p.numNeighbors, targetMetric);
 
-        System.out.println(String.format("Kendal's on %s with lambda=%.1f, mu=%.1f, k=%d: %.4f", testQueryFile, p.l, p.m, p.numVariants, p.numNeighbors, kendals_Test));
+        System.out.println(String.format(
+                "Kendal's on %s with lambda=%.1f, mu=%.1f, M=%d, N=%d: %.4f",
+                testQueryFile, p.l, p.m, p.numVariants, p.numNeighbors, kendals_Test));
 
         return kendals_Test;
     }
