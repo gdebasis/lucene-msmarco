@@ -309,8 +309,7 @@ public class KNNRelModel extends SupervisedRLM {
 
         for (Map.Entry<String, String> e : testQueries.entrySet()) {
             MsMarcoQuery query = new MsMarcoQuery(e.getKey(), e.getValue());
-
-            Query luceneQuery = query.makeQuery();
+            Query luceneQuery = query.getQuery();
             topDocs = searcher.search(luceneQuery, Constants.NUM_WANTED); // descending BM25
             topDocsMap.put(query.qid, topDocs);
 

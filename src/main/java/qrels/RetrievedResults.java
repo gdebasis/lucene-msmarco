@@ -50,8 +50,8 @@ public class RetrievedResults implements Comparable<RetrievedResults> {
                 .toPrimitive(rtuples
                         .stream()
                         .map(ResultTuple::getScore)
+                        .limit(Math.min(k, rtuples.size()))
                         .collect(Collectors.toList())
-                        .subList(0, Math.min(k, rtuples.size()))
                         .toArray(new Double[0]), 0.0);
     }
 

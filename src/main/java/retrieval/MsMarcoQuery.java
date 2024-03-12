@@ -22,6 +22,7 @@ public class MsMarcoQuery {
 
     public MsMarcoQuery(String qid, String qText) {
         this(qid, qText, 1);
+        makeQuery();
     }
 
     public MsMarcoQuery(String qid, String qText, float simWithOrig) {
@@ -70,7 +71,7 @@ public class MsMarcoQuery {
                 .collect(Collectors.toSet());
     }
 
-    Query makeQuery() {
+    void makeQuery() {
         BooleanQuery.Builder qb = new BooleanQuery.Builder();
         String[] tokens = MsMarcoIndexer
                 .analyze(MsMarcoIndexer.constructAnalyzer(), this.qText).split("\\s+");
@@ -78,12 +79,11 @@ public class MsMarcoQuery {
             TermQuery tq = new TermQuery(new Term(Constants.CONTENT_FIELD, token));
             qb.add(new BooleanClause(tq, BooleanClause.Occur.SHOULD));
         }
-        return (Query)qb.build();
+        query = qb.build();
     }
 
     public List<MsMarcoQuery> retrieveSimilarQueries(
             AllRelRcds rels,
-            IndexSearcher searcher,
             IndexSearcher qIndexSearcher,
             int k) throws Exception {
         List<MsMarcoQuery> knnQueries = new ArrayList<>();
@@ -96,9 +96,10 @@ public class MsMarcoQuery {
                 q.get(Constants.ID_FIELD),
                 q.get(Constants.CONTENT_FIELD),
                 sd.score);
-            rq.query = makeQuery();
+            rq.makeQuery();
 
             knnQueries.add(rq);
+            // TODO-DV: This has to work with cosine-sim of dense query vectors
             rq.simWithOrig = sd.score;
             rq.relDocs = rels.getRelInfo(rq.qid);
             scoreSum += rq.simWithOrig;
