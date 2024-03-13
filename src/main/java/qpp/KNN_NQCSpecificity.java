@@ -41,14 +41,15 @@ public class KNN_NQCSpecificity extends NQCSpecificity {
         double variantSpec = 0, colRelSpec = 0;
 
         try {
-            knnQueries = q.retrieveSimilarQueries(
-                    knnRelModel.getAllRels(),
-                    knnRelModel.getQueryIndexSearcher(),
-                    Math.max(numNeighbors, numVariants))
-            ;
-            int numRelatedQueries = knnQueries.size();
+            if (numVariants > 0 && numNeighbors > 0)
+                knnQueries = q.retrieveSimilarQueries(
+                        knnRelModel.getAllRels(),
+                        knnRelModel.getQueryIndexSearcher(),
+                        Math.max(numNeighbors, numVariants))
+                ;
 
             if (knnQueries != null) {
+                int numRelatedQueries = knnQueries.size();
                 variantSpec = variantSpecificity(q, knnQueries.subList(0, Math.min(numVariants, numRelatedQueries)), retInfo, topDocs, k);
                 colRelSpec = coRelsSpecificity(q, knnQueries.subList(0, Math.min(numNeighbors, numRelatedQueries)), retInfo, topDocs, k);
             }
@@ -56,7 +57,7 @@ public class KNN_NQCSpecificity extends NQCSpecificity {
         }
         catch (Exception ex) { ex.printStackTrace(); }
 
-        return lambda * variantSpec + (1-lambda) * colRelSpec;
+        return knnQueries!=null? lambda * variantSpec + (1-lambda) * colRelSpec : baseModel.computeSpecificity(q, retInfo, topDocs, k);
     }
 
     double variantSpecificity(MsMarcoQuery q, List<MsMarcoQuery> knnQueries,
@@ -94,11 +95,11 @@ public class KNN_NQCSpecificity extends NQCSpecificity {
         int i = 1;
         double corelEstimate;
         //double corelEstimateAvg = 0;
-        double max = retInfo.getTuples().get(0).getScore();
+        double z_max = retInfo.getTuples().get(0).getScore();
 
         // apply QPP base model on these estimated relevance scores
         RetrievedResults coRelInfo = new RetrievedResults(q.getId());
-        double z = retInfo.getTuples().stream()
+        double z_sum = retInfo.getTuples().stream()
                 .map(x -> x.getScore())
                 .mapToDouble(Double::doubleValue)
                 .sum()
@@ -108,9 +109,10 @@ public class KNN_NQCSpecificity extends NQCSpecificity {
             thisDocTermWts = knnRelModel.makeLMTermWts(rtuple.getDocName(), true);
             corelEstimate = TermDistribution.cosineSim(knnDocTermWts, thisDocTermWts);
             double ret_score = rtuple.getScore();
-            coRelInfo.addTuple(rtuple.getDocName(), i++, mu * corelEstimate + (1-mu) * ret_score/z);
+            coRelInfo.addTuple(rtuple.getDocName(), i++, mu * corelEstimate + (1-mu) * ret_score/z_max);
             //corelEstimateAvg += corelEstimate;
         }
+        coRelInfo.sortResultTuples();
 
         double corelSpec = baseModel.computeSpecificity(q, coRelInfo, topDocs, k);
         return corelSpec;

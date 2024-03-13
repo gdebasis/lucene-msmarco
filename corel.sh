@@ -1,9 +1,9 @@
 #!/bin/bash
 
-if [ $# -lt 5 ]
+if [ $# -lt 4 ]
 then
-        echo "Usage: $0 <dl19 res> <dl20 res> <method (nqc/jm/corel)> <ap/ndcg> <nqc/uef>"
+        echo "Usage: $0 <dl19 res> <dl20 res> <ap/ndcg> <nqc/uef>"
         exit
 fi
 
-mvn exec:java -Dexec.mainClass="experiments.TRECDLQPPEvaluator" -Dexec.args="$1 $2 $3 $4 $5"
+mvn exec:java -Dexec.mainClass="experiments.TRECDLQPPEvaluator" -Dexec.args="$1 $2 $3 $4"
