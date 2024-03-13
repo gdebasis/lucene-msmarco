@@ -86,11 +86,12 @@ public class TRECDLQPPEvaluator {
             String testQrelsFile,
             String trainResFile,
             String testResFile,
-            int maxNumVariants
+            int maxNumVariants,
+            boolean useRBO
     )
     throws Exception {
         IndexSearcher searcher = retriever.getSearcher();
-        KNNRelModel knnRelModel = new KNNRelModel(Constants.QRELS_TRAIN, trainQueryFile);
+        KNNRelModel knnRelModel = new KNNRelModel(Constants.QRELS_TRAIN, trainQueryFile, useRBO);
         List<MsMarcoQuery> trainQueries = knnRelModel.getQueries();
 
         Evaluator evaluatorTrain = new Evaluator(trainQrelsFile, trainResFile); // load ret and rel
@@ -119,7 +120,7 @@ public class TRECDLQPPEvaluator {
         }
         System.out.println(String.format("The best settings: lambda=%.1f, nv=%d", p.l, p.numVariants));
         // apply this setting on the test set
-        KNNRelModel knnRelModelTest = new KNNRelModel(Constants.QRELS_TRAIN, testQueryFile);
+        KNNRelModel knnRelModelTest = new KNNRelModel(Constants.QRELS_TRAIN, testQueryFile, useRBO);
         List<MsMarcoQuery> testQueries = knnRelModelTest.getQueries(); // these queries are different from train queries
 
         Evaluator evaluatorTest = new Evaluator(testQrelsFile, testResFile); // load ret and rel
@@ -150,12 +151,13 @@ public class TRECDLQPPEvaluator {
             String trainResFile,
             String testResFile,
             int maxNumVariants,
-            int maxNumNeighbors
+            int maxNumNeighbors,
+            boolean useRBO
     )
     throws Exception {
 
         IndexSearcher searcher = retriever.getSearcher();
-        KNNRelModel knnRelModel = new KNNRelModel(Constants.QRELS_TRAIN, trainQueryFile);
+        KNNRelModel knnRelModel = new KNNRelModel(Constants.QRELS_TRAIN, trainQueryFile, useRBO);
 
         Evaluator evaluatorTrain = new Evaluator(trainQrelsFile, trainResFile); // load ret and rel
         QPPEvaluator qppEvaluator = new QPPEvaluator(
@@ -190,7 +192,7 @@ public class TRECDLQPPEvaluator {
         }
         System.out.println(String.format("The best settings: lambda=%.1f, mu=%.1f, nv=%d nn=%d", p.l, p.m, p.numVariants, p.numNeighbors));
         // apply this setting on the test set
-        KNNRelModel knnRelModelTest = new KNNRelModel(Constants.QRELS_TRAIN, testQueryFile);
+        KNNRelModel knnRelModelTest = new KNNRelModel(Constants.QRELS_TRAIN, testQueryFile, useRBO);
 
         Evaluator evaluatorTest = new Evaluator(testQrelsFile, testResFile); // load ret and rel
         QPPEvaluator qppEvaluatorTest = new QPPEvaluator(
@@ -217,11 +219,12 @@ public class TRECDLQPPEvaluator {
             String resFile,
             Metric targetMetric,
             int numVariants,
-            float l
+            float l,
+            boolean useRBO
     )
     throws Exception {
 
-        KNNRelModel knnRelModel = new KNNRelModel(Constants.QRELS_TRAIN, queryFile);
+        KNNRelModel knnRelModel = new KNNRelModel(Constants.QRELS_TRAIN, queryFile, useRBO);
         Evaluator evaluatorTest = new Evaluator(qrelsFile, resFile); // load ret and rel
         QPPEvaluator qppEvaluatorTest = new QPPEvaluator(
                 queryFile, qrelsFile,
@@ -237,37 +240,39 @@ public class TRECDLQPPEvaluator {
 
     public static void main(String[] args) {
 
-        if (args.length < 4) {
-            System.out.println("Required arguments: <res file DL 19> <res file DL 20> <metric (ap/ndcg)> <uef/nqc>");
-            args = new String[4];
+        if (args.length < 5) {
+            System.out.println("Required arguments: <res file DL 19> <res file DL 20> <metric (ap/ndcg)> <uef/nqc> <rbo: true/false>");
+            args = new String[5];
             args[0] = "runs/bm25.mt5.dl19.100";
             args[1] = "runs/bm25.mt5.dl20.100";
             args[2] = "ap";
             args[3] = "nqc";
+            args[4] = "false";
         }
 
         Metric targetMetric = args[2].equals("ap")? Metric.AP : Metric.nDCG;
+        boolean useRBO = Boolean.parseBoolean(args[4]);
 
         try {
             OneStepRetriever retriever = new OneStepRetriever(Constants.QUERY_FILE_TEST);
             Settings.init(retriever.getSearcher());
 
-            /*
+            ///*
             for (int i=0; i<=1; i++) {
-                runSingleExperiment(args[3], retriever, QUERY_FILES[i], QRELS_FILES[i], args[i], targetMetric, 3, 0.5f);
+                runSingleExperiment(args[3], retriever, QUERY_FILES[i], QRELS_FILES[i], args[i], targetMetric, 3, 0.5f, useRBO);
             }
 
             System.exit(0);
-            */
+            //*/
 
             double kendalsOnTest = trainAndTest(args[3], retriever, targetMetric,
                     QUERY_FILES[DL19], QRELS_FILES[DL19],
                     QUERY_FILES[DL20], QRELS_FILES[DL20],
-                    args[0], args[1], Constants.QPP_COREL_MAX_VARIANTS);
+                    args[0], args[1], Constants.QPP_COREL_MAX_VARIANTS, useRBO);
             double kendalsOnTrain = trainAndTest(args[3], retriever, targetMetric,
                     QUERY_FILES[DL20], QRELS_FILES[DL20],
                     QUERY_FILES[DL19], QRELS_FILES[DL19],
-                    args[1], args[0], Constants.QPP_COREL_MAX_VARIANTS);
+                    args[1], args[0], Constants.QPP_COREL_MAX_VARIANTS, useRBO);
 
             double kendals = 0.5*(kendalsOnTrain + kendalsOnTest);
             System.out.println(String.format("Target Metric: %s, tau = %.4f", targetMetric.toString(), kendals));

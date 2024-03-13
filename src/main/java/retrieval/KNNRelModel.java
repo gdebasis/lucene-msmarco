@@ -60,10 +60,15 @@ public class KNNRelModel extends SupervisedRLM {
         qIndexSearcher.setSimilarity(new LMDirichletSimilarity(Constants.MU));
         queryMap = constructQueries(queryFile);
     }
+
     public KNNRelModel(String qrelFile, String queryFile) throws Exception {
+        this(qrelFile, queryFile, false);
+    }
+
+    public KNNRelModel(String qrelFile, String queryFile, boolean useRBO) throws Exception {
         super(qrelFile, queryFile);
         constructQueriesAndQrels(queryFile);
-        constructKNNMap();
+        constructKNNMap(useRBO);
     }
 
     public KNNRelModel(String qrelFile, String queryFile, String variantsFile) throws Exception {
@@ -94,7 +99,7 @@ public class KNNRelModel extends SupervisedRLM {
         return queryMap;
     }
 
-    void constructKNNMap() throws Exception {
+    void constructKNNMap(boolean useRBO) throws Exception {
         knnQueryMap = new HashMap<>();
         List<MsMarcoQuery> queries = queryMap.values().stream().collect(Collectors.toList());
 
@@ -107,8 +112,10 @@ public class KNNRelModel extends SupervisedRLM {
                 ;
 
                 // Replace BM25 similarities with RBO similarities. Just to be consistent with gen variants...
-                for (MsMarcoQuery knnQuery: knnQueries)
-                    knnQuery.setRefSim(computeRBO(q, knnQuery));
+                if (useRBO) {
+                    for (MsMarcoQuery knnQuery : knnQueries)
+                        knnQuery.setRefSim(computeRBO(q, knnQuery));
+                }
 
                 knnQueryMap.put(q.getId(), knnQueries);
             }
