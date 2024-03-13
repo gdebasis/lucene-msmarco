@@ -33,7 +33,6 @@ public class SARE implements QPPCorrelationMetric {
         return "SARE";
     }
 
-
     double computeSARE(double[] gt, double[] pred) {
         RankScore[] gt_rs = new RankScore[gt.length];
         RankScore[] pred_rs = new RankScore[pred.length];
@@ -58,6 +57,6 @@ public class SARE implements QPPCorrelationMetric {
         double[] gt =   {0.32, 0.15, 0.67, 0.08, 0.96, 0.45};
         double[] pred = {0.22, 0.75, 0.47, 0.83, 0.16, 0.05};
 
-        System.out.println((new SARE()).correlation(gt, pred));
+        System.out.println(String.format("SARE: %.4f", (new SARE()).correlation(gt, pred)));
     }
 }

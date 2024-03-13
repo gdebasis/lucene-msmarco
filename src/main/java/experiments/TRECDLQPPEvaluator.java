@@ -1,5 +1,6 @@
 package experiments;
 
+import correlation.SARE;
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TopDocs;
@@ -35,7 +36,17 @@ public class TRECDLQPPEvaluator {
     static String[] QUERY_FILES = {"data/trecdl/pass_2019.queries", "data/trecdl/pass_2020.queries"};
     static String[] QRELS_FILES = {"data/trecdl/pass_2019.qrels", "data/trecdl/pass_2020.qrels"};
 
-    static double runExperiment(
+    static class TauAndSARE {
+        double tau;
+        double sare;
+
+        TauAndSARE(double tau, double sare) {
+            this.tau = tau;
+            this.sare = sare;
+        }
+    }
+
+    static TauAndSARE runExperiment(
             String baseQPPModelName, // nqc/uef
             IndexSearcher searcher,
             KNNRelModel knnRelModel,
@@ -72,11 +83,14 @@ public class TRECDLQPPEvaluator {
             i++;
         }
         //System.out.println(String.format("Avg. %s: %.4f", targetMetric.toString(), Arrays.stream(evaluatedMetricValues).sum()/(double)numQueries));
-        kendals = new KendalCorrelation().correlation(evaluatedMetricValues, qppEstimates);
-        return kendals;
+
+        double tau = new KendalCorrelation().correlation(evaluatedMetricValues, qppEstimates);
+        double sare = new SARE().correlation(evaluatedMetricValues, qppEstimates);
+
+        return new TauAndSARE(tau, sare);
     }
 
-    static double trainAndTest(
+    static TauAndSARE trainAndTest(
             String baseModelName,
             OneStepRetriever retriever,
             Metric targetMetric,
@@ -105,16 +119,16 @@ public class TRECDLQPPEvaluator {
 
         for (int numVariants=1; numVariants<=maxNumVariants; numVariants++) {
             for (float l = 0; l <= 1; l += Constants.QPP_COREL_LAMBDA_STEPS) {
-                double kendals = runExperiment(baseModelName,
+                TauAndSARE tauAndSARE = runExperiment(baseModelName,
                         searcher, knnRelModel, evaluatorTrain,
                         trainQueries, topDocsMap, l, numVariants, targetMetric);
 
                 System.out.println(String.format("Train on %s -- (%.1f, %d): tau = %.4f",
-                        trainQueryFile, l, numVariants, kendals));
-                if (kendals > p.kendals) {
+                        trainQueryFile, l, numVariants, tauAndSARE.tau, tauAndSARE.sare));
+                if (tauAndSARE.tau > p.kendals) {
                     p.l = l;
                     p.numVariants = numVariants;
-                    p.kendals = kendals; // keep track of max
+                    p.kendals = tauAndSARE.tau; // keep track of max
                 }
             }
         }
@@ -129,18 +143,18 @@ public class TRECDLQPPEvaluator {
                 new KendalCorrelation(), retriever.getSearcher(), Constants.QPP_NUM_TOPK);
 
         Map<String, TopDocs> topDocsMapTest = evaluatorTest.getAllRetrievedResults().castToTopDocs();
-        double kendals_Test = runExperiment(baseModelName,
+        TauAndSARE tauAndSARE_Test = runExperiment(baseModelName,
                 searcher, knnRelModelTest,
                 evaluatorTest, testQueries, topDocsMapTest, p.l, p.numVariants, targetMetric);
 
         System.out.println(String.format(
-                "Kendal's on %s with lambda=%.1f, M=%d: %.4f",
-                testQueryFile, p.l, p.numVariants, kendals_Test));
+                "Kendal's on %s with lambda=%.1f, M=%d: %.4f %.4f",
+                testQueryFile, p.l, p.numVariants, tauAndSARE_Test.tau, tauAndSARE_Test.sare));
 
-        return kendals_Test;
+        return tauAndSARE_Test;
     }
 
-    static double trainAndTest(
+    static TauAndSARE trainAndTest(
             String baseModelName,
             OneStepRetriever retriever,
             Metric targetMetric,
@@ -173,18 +187,18 @@ public class TRECDLQPPEvaluator {
             for (int numNeighbors = 1; numNeighbors <= maxNumNeighbors; numNeighbors++) {
                 for (float l = 0; l <= 1; l += .2f) {
                     for (float m = 0; m <= 1; m += .2f) {
-                        double kendals = runExperiment(baseModelName,
+                        TauAndSARE tauAndSARE = runExperiment(baseModelName,
                                 searcher, knnRelModel, evaluatorTrain,
                                 trainQueries, topDocsMap, l, numVariants, targetMetric);
 
                         System.out.println(String.format("Train on %s -- (%.1f, %d): tau = %.4f",
-                                trainQueryFile, l, numVariants, kendals));
-                        if (kendals > p.kendals) {
+                                trainQueryFile, l, numVariants, tauAndSARE.tau));
+                        if (tauAndSARE.tau > p.kendals) {
                             p.l = l;
                             p.m = m;
                             p.numNeighbors = numNeighbors;
                             p.numVariants = numVariants;
-                            p.kendals = kendals; // keep track of max
+                            p.kendals = tauAndSARE.tau; // keep track of max
                         }
                     }
                 }
@@ -201,15 +215,15 @@ public class TRECDLQPPEvaluator {
         List<MsMarcoQuery> testQueries = qppEvaluatorTest.constructQueries(testQueryFile); // these queries are different from train queries
 
         Map<String, TopDocs> topDocsMapTest = evaluatorTest.getAllRetrievedResults().castToTopDocs();
-        double kendals_Test = runExperiment(baseModelName,
+        TauAndSARE tauAndSARE_Test = runExperiment(baseModelName,
                 searcher, knnRelModelTest,
                 evaluatorTest, testQueries, topDocsMapTest, p.l, p.numVariants, targetMetric);
 
         System.out.println(String.format(
                 "Kendal's on %s with lambda=%.1f, mu=%.1f, M=%d, N=%d: %.4f",
-                testQueryFile, p.l, p.m, p.numVariants, p.numNeighbors, kendals_Test));
+                testQueryFile, p.l, p.m, p.numVariants, p.numNeighbors, tauAndSARE_Test.tau));
 
-        return kendals_Test;
+        return tauAndSARE_Test;
     }
 
     static void runSingleExperiment(
@@ -232,10 +246,10 @@ public class TRECDLQPPEvaluator {
         List<MsMarcoQuery> testQueries = qppEvaluatorTest.constructQueries(queryFile); // these queries are different from train queries
 
         Map<String, TopDocs> topDocsMapTest = evaluatorTest.getAllRetrievedResults().castToTopDocs();
-        double kendals = runExperiment(baseModelName, retriever.getSearcher(),
+        TauAndSARE tauAndSARE = runExperiment(baseModelName, retriever.getSearcher(),
                                         knnRelModel, evaluatorTest, testQueries, topDocsMapTest,
                                         l, numVariants, targetMetric);
-        System.out.println(String.format("Target Metric: %s, tau = %.4f", targetMetric.toString(), kendals));
+        System.out.println(String.format("Target Metric: %s, tau = %.4f sARE = %.4f", targetMetric.toString(), tauAndSARE.tau, tauAndSARE.sare));
     }
 
     public static void main(String[] args) {
@@ -265,17 +279,18 @@ public class TRECDLQPPEvaluator {
             System.exit(0);
             //*/
 
-            double kendalsOnTest = trainAndTest(args[3], retriever, targetMetric,
+            TauAndSARE kendalsOnTest = trainAndTest(args[3], retriever, targetMetric,
                     QUERY_FILES[DL19], QRELS_FILES[DL19],
                     QUERY_FILES[DL20], QRELS_FILES[DL20],
                     args[0], args[1], Constants.QPP_COREL_MAX_VARIANTS, useRBO);
-            double kendalsOnTrain = trainAndTest(args[3], retriever, targetMetric,
+            TauAndSARE kendalsOnTrain = trainAndTest(args[3], retriever, targetMetric,
                     QUERY_FILES[DL20], QRELS_FILES[DL20],
                     QUERY_FILES[DL19], QRELS_FILES[DL19],
                     args[1], args[0], Constants.QPP_COREL_MAX_VARIANTS, useRBO);
 
-            double kendals = 0.5*(kendalsOnTrain + kendalsOnTest);
-            System.out.println(String.format("Target Metric: %s, tau = %.4f", targetMetric.toString(), kendals));
+            double kendals = 0.5*(kendalsOnTrain.tau + kendalsOnTest.tau);
+            double sare = 0.5*(kendalsOnTrain.sare + kendalsOnTest.sare);
+            System.out.println(String.format("Target Metric: %s, tau = %.4f, sare = %.4f", targetMetric.toString(), kendals, sare));
         }
         catch (Exception ex) {
             ex.printStackTrace();
