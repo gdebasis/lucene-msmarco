@@ -43,7 +43,8 @@ public interface Constants {
 
     int QPP_JM_COREL_NUMNEIGHBORS = 3;
     int QPP_COREL_MAX_NEIGHBORS = 3;
-    int QPP_COREL_MAX_VARIANTS = 5;
+    int QPP_COREL_MAX_VARIANTS = 10;
+    float QPP_COREL_LAMBDA_STEPS = 0.1f;
     int QPP_NUM_TOPK = 50;
     int EVAL_MIN_REL = 2;
     int NDCG_CUTOFF = 10;

@@ -12,24 +12,24 @@ import qrels.RetrievedResults;
 import retrieval.TermDistribution;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class KNN_NQCSpecificity extends NQCSpecificity {
     QPPMethod baseModel;
     KNNRelModel knnRelModel;
-    int numNeighbors, numVariants;
-    float lambda, mu, residualLinear;
+    int numVariants;
+    float lambda, mu;
 
     public KNN_NQCSpecificity(QPPMethod baseModel,
                               IndexSearcher searcher, KNNRelModel knnRelModel,
-                              int numVariants, int numNeighbors,
+                              int numVariants,
                               float lambda, float mu) {
         super(searcher);
 
         this.baseModel = baseModel;
         this.knnRelModel = knnRelModel;
-        this.numNeighbors = numNeighbors;
         this.numVariants = numVariants;
         this.lambda = lambda;
         this.mu = mu;
@@ -41,23 +41,22 @@ public class KNN_NQCSpecificity extends NQCSpecificity {
         double variantSpec = 0, colRelSpec = 0;
 
         try {
-            if (numVariants > 0 && numNeighbors > 0)
-                knnQueries = q.retrieveSimilarQueries(
-                        knnRelModel.getAllRels(),
-                        knnRelModel.getQueryIndexSearcher(),
-                        Math.max(numNeighbors, numVariants))
-                ;
+            if (numVariants > 0)
+                knnQueries = knnRelModel.getKNNs(q, numVariants);
 
             if (knnQueries != null) {
                 int numRelatedQueries = knnQueries.size();
-                variantSpec = variantSpecificity(q, knnQueries.subList(0, Math.min(numVariants, numRelatedQueries)), retInfo, topDocs, k);
-                colRelSpec = coRelsSpecificity(q, knnQueries.subList(0, Math.min(numNeighbors, numRelatedQueries)), retInfo, topDocs, k);
+                variantSpec = variantSpecificity(q, knnQueries, retInfo, topDocs, k);
+                //colRelSpec = coRelsSpecificity(q, knnQueries.subList(0, Math.min(numNeighbors, numRelatedQueries)), retInfo, topDocs, k);
             }
 
         }
         catch (Exception ex) { ex.printStackTrace(); }
 
-        return knnQueries!=null? lambda * variantSpec + (1-lambda) * colRelSpec : baseModel.computeSpecificity(q, retInfo, topDocs, k);
+        //return knnQueries!=null? lambda * variantSpec + (1-lambda) * colRelSpec : baseModel.computeSpecificity(q, retInfo, topDocs, k);
+        return knnQueries!=null?
+                lambda * variantSpec + (1-lambda) * baseModel.computeSpecificity(q, retInfo, topDocs, k):
+                baseModel.computeSpecificity(q, retInfo, topDocs, k);
     }
 
     double variantSpecificity(MsMarcoQuery q, List<MsMarcoQuery> knnQueries,

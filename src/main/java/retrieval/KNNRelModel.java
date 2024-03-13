@@ -3,6 +3,7 @@ package retrieval;
 import fdbk.RelevanceModelConditional;
 import fdbk.RelevanceModelIId;
 import indexing.MsMarcoIndexer;
+import org.apache.commons.io.FileUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
@@ -18,6 +19,7 @@ import qrels.PerQueryRelDocs;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -40,6 +42,8 @@ class TermWt implements Comparable<TermWt> {
 public class KNNRelModel extends SupervisedRLM {
     IndexReader qIndexReader;
     IndexSearcher qIndexSearcher;
+    List<MsMarcoQuery> queries;
+    Map<String, List<MsMarcoQuery>> knnQueryMap;
 
     static Analyzer analyzer = MsMarcoIndexer.constructAnalyzer();
 
@@ -50,6 +54,48 @@ public class KNNRelModel extends SupervisedRLM {
         qIndexReader = DirectoryReader.open(FSDirectory.open(new File(Constants.MSMARCO_QUERY_INDEX).toPath()));
         qIndexSearcher = new IndexSearcher(qIndexReader);
         qIndexSearcher.setSimilarity(new LMDirichletSimilarity(Constants.MU));
+        queries = constructQueries(queryFile);
+        constructKNNMap();
+    }
+
+    public List<MsMarcoQuery> getQueries() { return queries; }
+
+    public List<MsMarcoQuery> constructQueries(String queryFile) throws Exception {
+        Map<String, String> testQueries =
+                FileUtils.readLines(new File(queryFile), StandardCharsets.UTF_8)
+                        .stream()
+                        .map(x -> x.split("\t"))
+                        .collect(Collectors.toMap(x -> x[0], x -> x[1])
+                        )
+                ;
+
+        List<MsMarcoQuery> queries = new ArrayList<>();
+        for (Map.Entry<String, String> e : testQueries.entrySet()) {
+            String qid = e.getKey();
+            String queryText = e.getValue();
+            MsMarcoQuery msMarcoQuery = new MsMarcoQuery(qid, queryText, makeQuery(queryText));
+            queries.add(msMarcoQuery);
+        }
+        return queries;
+    }
+
+    void constructKNNMap() throws Exception {
+        knnQueryMap = new HashMap<>();
+        for (MsMarcoQuery q : queries) {
+            List<MsMarcoQuery> knnQueries = knnQueryMap.get(q.getId());
+            if (knnQueries == null) {
+                knnQueries = q.retrieveSimilarQueries(
+                        getQueryIndexSearcher(),
+                        Constants.QPP_COREL_MAX_VARIANTS)
+                ;
+                knnQueryMap.put(q.getId(), knnQueries);
+            }
+        }
+    }
+
+    public List<MsMarcoQuery> getKNNs(MsMarcoQuery q, int k) {
+        List<MsMarcoQuery> knnQueries = knnQueryMap.get(q.getId());
+        return knnQueries.subList(0, Math.min(k, knnQueries.size()));
     }
 
     int findRank(String docId, TopDocs topDocs) throws Exception {

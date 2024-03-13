@@ -112,6 +112,34 @@ public class MsMarcoQuery {
         return knnQueries;
     }
 
+    public List<MsMarcoQuery> retrieveSimilarQueries(
+            IndexSearcher qIndexSearcher,
+            int k) throws Exception {
+        List<MsMarcoQuery> knnQueries = new ArrayList<>();
+
+        TopDocs knnQueriesTopDocs = qIndexSearcher.search(this.query, k);
+        double scoreSum = 0;
+        for (ScoreDoc sd : knnQueriesTopDocs.scoreDocs) {
+            Document q = qIndexSearcher.getIndexReader().document(sd.doc);
+            MsMarcoQuery rq = new MsMarcoQuery(
+                    q.get(Constants.ID_FIELD),
+                    q.get(Constants.CONTENT_FIELD),
+                    sd.score);
+            rq.makeQuery();
+
+            knnQueries.add(rq);
+            // TODO-DV: This has to work with cosine-sim of dense query vectors
+            rq.simWithOrig = sd.score;
+            scoreSum += rq.simWithOrig;
+        }
+
+        for (MsMarcoQuery rq: knnQueries) {
+            rq.simWithOrig /= scoreSum;
+        }
+
+        return knnQueries;
+    }
+
     public Query getQuery() { return query; }
     public String getId() { return qid; }
 
