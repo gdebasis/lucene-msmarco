@@ -108,8 +108,8 @@ public class TRECDLQPPEvaluator {
                         searcher, knnRelModel, evaluatorTrain,
                         trainQueries, topDocsMap, l, 0.0f, numVariants, targetMetric);
 
-                System.out.println(String.format("Train on %s -- (%.1f, %.1f, %d): tau = %.4f",
-                        trainQueryFile, l, 0.0f, numVariants, kendals));
+                System.out.println(String.format("Train on %s -- (%.1f, %d): tau = %.4f",
+                        trainQueryFile, l, numVariants, kendals));
                 if (kendals > p.kendals) {
                     p.l = l;
                     p.numVariants = numVariants;
@@ -175,8 +175,8 @@ public class TRECDLQPPEvaluator {
                                 searcher, knnRelModel, evaluatorTrain,
                                 trainQueries, topDocsMap, l, m, numVariants, targetMetric);
 
-                        System.out.println(String.format("Train on %s -- (%.1f, %.1f, %d): tau = %.4f",
-                                trainQueryFile, l, m, numVariants, kendals));
+                        System.out.println(String.format("Train on %s -- (%.1f, %d): tau = %.4f",
+                                trainQueryFile, l, numVariants, kendals));
                         if (kendals > p.kendals) {
                             p.l = l;
                             p.m = m;
