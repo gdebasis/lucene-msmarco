@@ -1,35 +1,25 @@
 package experiments;
 
-import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
+import correlation.KendalCorrelation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.similarities.LMDirichletSimilarity;
-import org.apache.lucene.search.similarities.Similarity;
-import correlation.KendalCorrelation;
+import qpp.NQCSpecificity;
+import qpp.QPPMethod;
+import qpp.UEFSpecificity;
+import qpp.VariantSpecificity;
 import qrels.Evaluator;
 import qrels.Metric;
-import qrels.*;
-import qpp.*;
-
+import qrels.RetrievedResults;
 import retrieval.Constants;
 import retrieval.KNNRelModel;
 import retrieval.MsMarcoQuery;
 import retrieval.OneStepRetriever;
 
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-class OptimalHyperParams {
-    float l;
-    float m;
-    int numNeighbors;
-    int numVariants;
-    double kendals;
-}
+public class TRECDLQPPEvaluatorWithGenVariants {
 
-public class TRECDLQPPEvaluator {
     static final int DL19 = 0;
     static final int DL20 = 1;
     static String[] QUERY_FILES = {"data/trecdl/pass_2019.queries", "data/trecdl/pass_2020.queries"};
@@ -86,18 +76,15 @@ public class TRECDLQPPEvaluator {
             String testQrelsFile,
             String trainResFile,
             String testResFile,
-            int maxNumVariants
+            int maxNumVariants,
+            String variantsFile
     )
-    throws Exception {
+            throws Exception {
         IndexSearcher searcher = retriever.getSearcher();
-        KNNRelModel knnRelModel = new KNNRelModel(Constants.QRELS_TRAIN, trainQueryFile);
+        KNNRelModel knnRelModel = new KNNRelModel(Constants.QRELS_TRAIN, trainQueryFile, variantsFile);
         List<MsMarcoQuery> trainQueries = knnRelModel.getQueries();
 
         Evaluator evaluatorTrain = new Evaluator(trainQrelsFile, trainResFile); // load ret and rel
-        QPPEvaluator qppEvaluator = new QPPEvaluator(
-                trainQueryFile, trainQrelsFile,
-                new KendalCorrelation(), retriever.getSearcher(), Constants.QPP_NUM_TOPK);
-
         Map<String, TopDocs> topDocsMap = evaluatorTrain.getAllRetrievedResults().castToTopDocs();
 
         OptimalHyperParams p = new OptimalHyperParams();
@@ -119,13 +106,10 @@ public class TRECDLQPPEvaluator {
         }
         System.out.println(String.format("The best settings: lambda=%.1f, nv=%d", p.l, p.numVariants));
         // apply this setting on the test set
-        KNNRelModel knnRelModelTest = new KNNRelModel(Constants.QRELS_TRAIN, testQueryFile);
+        KNNRelModel knnRelModelTest = new KNNRelModel(Constants.QRELS_TRAIN, testQueryFile, variantsFile);
         List<MsMarcoQuery> testQueries = knnRelModelTest.getQueries(); // these queries are different from train queries
 
         Evaluator evaluatorTest = new Evaluator(testQrelsFile, testResFile); // load ret and rel
-        QPPEvaluator qppEvaluatorTest = new QPPEvaluator(
-                testQueryFile, testQrelsFile,
-                new KendalCorrelation(), retriever.getSearcher(), Constants.QPP_NUM_TOPK);
 
         Map<String, TopDocs> topDocsMapTest = evaluatorTest.getAllRetrievedResults().castToTopDocs();
         double kendals_Test = runExperiment(baseModelName,
@@ -152,16 +136,13 @@ public class TRECDLQPPEvaluator {
             int maxNumVariants,
             int maxNumNeighbors
     )
-    throws Exception {
+            throws Exception {
 
         IndexSearcher searcher = retriever.getSearcher();
         KNNRelModel knnRelModel = new KNNRelModel(Constants.QRELS_TRAIN, trainQueryFile);
 
         Evaluator evaluatorTrain = new Evaluator(trainQrelsFile, trainResFile); // load ret and rel
-        QPPEvaluator qppEvaluator = new QPPEvaluator(
-                trainQueryFile, trainQrelsFile,
-                new KendalCorrelation(), retriever.getSearcher(), Constants.QPP_NUM_TOPK);
-        List<MsMarcoQuery> trainQueries = qppEvaluator.constructQueries(trainQueryFile);
+        List<MsMarcoQuery> trainQueries = knnRelModel.getQueries();
 
         Map<String, TopDocs> topDocsMap = evaluatorTrain.getAllRetrievedResults().castToTopDocs();
 
@@ -217,36 +198,37 @@ public class TRECDLQPPEvaluator {
             String resFile,
             Metric targetMetric,
             int numVariants,
-            float l
+            float l,
+            String variantFile
     )
-    throws Exception {
+            throws Exception {
 
-        KNNRelModel knnRelModel = new KNNRelModel(Constants.QRELS_TRAIN, queryFile);
+        KNNRelModel knnRelModel = new KNNRelModel(Constants.QRELS_TRAIN, queryFile, variantFile);
+        List<MsMarcoQuery> testQueries = knnRelModel.getQueries(); // these queries are different from train queries
+
         Evaluator evaluatorTest = new Evaluator(qrelsFile, resFile); // load ret and rel
-        QPPEvaluator qppEvaluatorTest = new QPPEvaluator(
-                queryFile, qrelsFile,
-                new KendalCorrelation(), retriever.getSearcher(), Constants.QPP_NUM_TOPK);
-        List<MsMarcoQuery> testQueries = qppEvaluatorTest.constructQueries(queryFile); // these queries are different from train queries
 
         Map<String, TopDocs> topDocsMapTest = evaluatorTest.getAllRetrievedResults().castToTopDocs();
         double kendals = runExperiment(baseModelName, retriever.getSearcher(),
-                                        knnRelModel, evaluatorTest, testQueries, topDocsMapTest,
-                                        l, numVariants, targetMetric);
+                knnRelModel, evaluatorTest, testQueries, topDocsMapTest,
+                l, numVariants, targetMetric);
         System.out.println(String.format("Target Metric: %s, tau = %.4f", targetMetric.toString(), kendals));
     }
 
     public static void main(String[] args) {
 
-        if (args.length < 4) {
-            System.out.println("Required arguments: <res file DL 19> <res file DL 20> <metric (ap/ndcg)> <uef/nqc>");
-            args = new String[4];
+        if (args.length < 5) {
+            System.out.println("Required arguments: <res file DL 19> <res file DL 20> <metric (ap/ndcg)> <uef/nqc> <rlm/w2v (variant gen)>");
+            args = new String[5];
             args[0] = "runs/bm25.mt5.dl19.100";
             args[1] = "runs/bm25.mt5.dl20.100";
             args[2] = "ap";
             args[3] = "nqc";
+            args[4] = "rlm";
         }
 
         Metric targetMetric = args[2].equals("ap")? Metric.AP : Metric.nDCG;
+        String variantFile = args[4].equals("rlm")? Constants.QPP_JM_VARIANTS_FILE_RLM: Constants.QPP_JM_VARIANTS_FILE_W2V;
 
         try {
             OneStepRetriever retriever = new OneStepRetriever(Constants.QUERY_FILE_TEST);
@@ -254,7 +236,7 @@ public class TRECDLQPPEvaluator {
 
             /*
             for (int i=0; i<=1; i++) {
-                runSingleExperiment(args[3], retriever, QUERY_FILES[i], QRELS_FILES[i], args[i], targetMetric, 3, 0.5f);
+                runSingleExperiment(args[3], retriever, QUERY_FILES[i], QRELS_FILES[i], args[i], targetMetric, 3, 0.5f, variantFile);
             }
 
             System.exit(0);
@@ -263,11 +245,11 @@ public class TRECDLQPPEvaluator {
             double kendalsOnTest = trainAndTest(args[3], retriever, targetMetric,
                     QUERY_FILES[DL19], QRELS_FILES[DL19],
                     QUERY_FILES[DL20], QRELS_FILES[DL20],
-                    args[0], args[1], Constants.QPP_COREL_MAX_VARIANTS);
+                    args[0], args[1], Constants.QPP_COREL_MAX_VARIANTS, variantFile);
             double kendalsOnTrain = trainAndTest(args[3], retriever, targetMetric,
                     QUERY_FILES[DL20], QRELS_FILES[DL20],
                     QUERY_FILES[DL19], QRELS_FILES[DL19],
-                    args[1], args[0], Constants.QPP_COREL_MAX_VARIANTS);
+                    args[1], args[0], Constants.QPP_COREL_MAX_VARIANTS, variantFile);
 
             double kendals = 0.5*(kendalsOnTrain + kendalsOnTest);
             System.out.println(String.format("Target Metric: %s, tau = %.4f", targetMetric.toString(), kendals));

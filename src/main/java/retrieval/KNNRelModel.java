@@ -1,5 +1,6 @@
 package retrieval;
 
+import correlation.OverlapStats;
 import fdbk.RelevanceModelConditional;
 import fdbk.RelevanceModelIId;
 import indexing.MsMarcoIndexer;
@@ -42,25 +43,39 @@ class TermWt implements Comparable<TermWt> {
 public class KNNRelModel extends SupervisedRLM {
     IndexReader qIndexReader;
     IndexSearcher qIndexSearcher;
-    List<MsMarcoQuery> queries;
+    Map<String, MsMarcoQuery> queryMap;
     Map<String, List<MsMarcoQuery>> knnQueryMap;
+
 
     static Analyzer analyzer = MsMarcoIndexer.constructAnalyzer();
 
     public IndexSearcher getQueryIndexSearcher() { return qIndexSearcher; }
 
-    public KNNRelModel(String qrelFile, String queryFile) throws Exception {
-        super(qrelFile, queryFile);
+    public Map<String, List<MsMarcoQuery>> getKnnQueryMap() { return knnQueryMap; }
+
+    private void constructQueriesAndQrels(String queryFile) throws Exception {
+        queryMap = new HashMap<>();
         qIndexReader = DirectoryReader.open(FSDirectory.open(new File(Constants.MSMARCO_QUERY_INDEX).toPath()));
         qIndexSearcher = new IndexSearcher(qIndexReader);
         qIndexSearcher.setSimilarity(new LMDirichletSimilarity(Constants.MU));
-        queries = constructQueries(queryFile);
+        queryMap = constructQueries(queryFile);
+    }
+    public KNNRelModel(String qrelFile, String queryFile) throws Exception {
+        super(qrelFile, queryFile);
+        constructQueriesAndQrels(queryFile);
         constructKNNMap();
     }
 
-    public List<MsMarcoQuery> getQueries() { return queries; }
+    public KNNRelModel(String qrelFile, String queryFile, String variantsFile) throws Exception {
+        super(qrelFile, queryFile);
+        constructQueriesAndQrels(queryFile);
 
-    public List<MsMarcoQuery> constructQueries(String queryFile) throws Exception {
+        constructKNNMap(variantsFile);
+    }
+
+    public List<MsMarcoQuery> getQueries() { return queryMap.values().stream().collect(Collectors.toList()); }
+
+    public Map<String, MsMarcoQuery> constructQueries(String queryFile) throws Exception {
         Map<String, String> testQueries =
                 FileUtils.readLines(new File(queryFile), StandardCharsets.UTF_8)
                         .stream()
@@ -74,13 +89,15 @@ public class KNNRelModel extends SupervisedRLM {
             String qid = e.getKey();
             String queryText = e.getValue();
             MsMarcoQuery msMarcoQuery = new MsMarcoQuery(qid, queryText, makeQuery(queryText));
-            queries.add(msMarcoQuery);
+            queryMap.put(qid, msMarcoQuery);
         }
-        return queries;
+        return queryMap;
     }
 
     void constructKNNMap() throws Exception {
         knnQueryMap = new HashMap<>();
+        List<MsMarcoQuery> queries = queryMap.values().stream().collect(Collectors.toList());
+
         for (MsMarcoQuery q : queries) {
             List<MsMarcoQuery> knnQueries = knnQueryMap.get(q.getId());
             if (knnQueries == null) {
@@ -88,7 +105,44 @@ public class KNNRelModel extends SupervisedRLM {
                         getQueryIndexSearcher(),
                         Constants.QPP_COREL_MAX_VARIANTS)
                 ;
+
+                // Replace BM25 similarities with RBO similarities. Just to be consistent with gen variants...
+                for (MsMarcoQuery knnQuery: knnQueries)
+                    knnQuery.setRefSim(computeRBO(q, knnQuery));
+
                 knnQueryMap.put(q.getId(), knnQueries);
+            }
+        }
+    }
+
+    float computeRBO(MsMarcoQuery q, MsMarcoQuery refQ) throws Exception {
+        TopDocs topA = searcher.search(q.getQuery(), Constants.RBO_NUM_DOCS);
+        TopDocs topB = searcher.search(refQ.getQuery(), Constants.RBO_NUM_DOCS);
+        return (float)OverlapStats.computeRBO(topA, topB);
+    }
+
+    void constructKNNMap(String variantsFile) throws Exception {
+        knnQueryMap = new HashMap<>();
+
+        List<String> lines = FileUtils.readLines(new File(variantsFile), StandardCharsets.UTF_8);
+
+        for (String line: lines) {
+            String[] tokens = line.split("\\t");
+            String qid = tokens[0];
+
+            for (int i=1; i < tokens.length; i++) {
+                List<MsMarcoQuery> knnQueries = knnQueryMap.get(qid);
+                if (knnQueries==null) {
+                    knnQueries = new ArrayList<>();
+                    knnQueryMap.put(qid, knnQueries);
+                }
+                MsMarcoQuery rq = new MsMarcoQuery(qid + "_v_" + i, tokens[i]);
+                MsMarcoQuery testQuery = queryMap.get(qid);
+                if (testQuery==null)
+                    continue;  // the variants file is a union of dl'19 and 20... hence safe to discard missing ones
+                rq.setRefSim(computeRBO(testQuery, rq));
+
+                knnQueries.add(rq);
             }
         }
     }

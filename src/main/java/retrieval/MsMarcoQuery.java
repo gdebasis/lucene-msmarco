@@ -148,6 +148,7 @@ public class MsMarcoQuery {
     public float getRefSim() {
         return simWithOrig;
     }
+    public void setRefSim(float refSim) { simWithOrig = refSim; }
 
     public String toString() {
         return String.format("%s, %s: (%.4f)", qText, query, simWithOrig);

@@ -1,10 +1,14 @@
 package qrels;
 
+import org.apache.lucene.document.Document;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TopDocs;
 import retrieval.Constants;
+import retrieval.KNNRelModel;
+import retrieval.MsMarcoQuery;
+import retrieval.OneStepRetriever;
 
-import java.io.FileReader;
-import java.util.Properties;
-
+import java.util.*;
 
 public class Evaluator {
     AllRelRcds relRcds;
@@ -14,6 +18,31 @@ public class Evaluator {
         relRcds = new AllRelRcds(qrelsFile);
         retRcds = new AllRetrievedResults(resFile);
         fillRelInfo();
+    }
+
+    public Evaluator(String qrelsFile, String resFile, KNNRelModel knnModel) throws Exception {
+        relRcds = new AllRelRcds(qrelsFile);
+        retRcds = new AllRetrievedResults(resFile);
+        fillRelInfo();
+        addQueryVariantResults(knnModel);
+    }
+
+    void addQueryVariantResults(KNNRelModel knnRelModel) throws Exception {
+        for (Map.Entry<String, List<MsMarcoQuery>> e: knnRelModel.getKnnQueryMap().entrySet()) {
+            List<MsMarcoQuery> knnQueries = e.getValue();
+            for (MsMarcoQuery rq : knnQueries) {
+                TopDocs topDocs = knnRelModel.getSearcher().search(rq.getQuery(), Constants.QPP_NUM_TOPK);
+                RetrievedResults rr = new RetrievedResults(rq.getId());
+
+                int rank = 1;
+                for (ScoreDoc sd : topDocs.scoreDocs) {
+                    Document doc = knnRelModel.getSearcher().getIndexReader().document(sd.doc);
+                    String docName = doc.get(Constants.ID_FIELD);
+                    rr.addTuple(docName, rank++, sd.score);
+                }
+                retRcds.allRetMap.put(rr.qid, rr);
+            }
+        }
     }
 
     public AllRetrievedResults getAllRetrievedResults() { return retRcds; }
