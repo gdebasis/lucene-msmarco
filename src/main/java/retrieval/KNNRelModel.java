@@ -115,6 +115,8 @@ public class KNNRelModel extends SupervisedRLM {
                 if (useRBO) {
                     for (MsMarcoQuery knnQuery : knnQueries)
                         knnQuery.setRefSim(computeRBO(q, knnQuery));
+
+                    knnQueries = knnQueries.stream().sorted(Comparator.reverseOrder()).collect(Collectors.toList());
                 }
 
                 knnQueryMap.put(q.getId(), knnQueries);
@@ -151,6 +153,10 @@ public class KNNRelModel extends SupervisedRLM {
 
                 knnQueries.add(rq);
             }
+
+            List<MsMarcoQuery> knnQueries = knnQueryMap.get(qid);
+            knnQueries = knnQueries.stream().sorted(Comparator.reverseOrder()).collect(Collectors.toList());
+            knnQueryMap.put(qid, knnQueries);
         }
     }
 

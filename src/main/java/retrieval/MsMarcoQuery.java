@@ -12,7 +12,7 @@ import qrels.PerQueryRelDocs;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class MsMarcoQuery {
+public class MsMarcoQuery implements Comparable<MsMarcoQuery> {
     String qid;
     String qText;
     Query query;
@@ -152,6 +152,11 @@ public class MsMarcoQuery {
 
     public String toString() {
         return String.format("%s, %s: (%.4f)", qText, query, simWithOrig);
+    }
+
+    @Override
+    public int compareTo(MsMarcoQuery o) {
+        return Float.compare(this.simWithOrig, o.simWithOrig);
     }
 }
 
