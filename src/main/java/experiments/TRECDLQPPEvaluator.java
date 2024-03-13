@@ -211,11 +211,11 @@ public class TRECDLQPPEvaluator {
             System.exit(0);
              */
 
-            double kendalsOnTest = trainAndTest(args[4], retriever, targetMetric,
+            double kendalsOnTest = trainAndTest(args[3], retriever, targetMetric,
                     QUERY_FILES[DL19], QRELS_FILES[DL19],
                     QUERY_FILES[DL20], QRELS_FILES[DL20],
                     args[0], args[1], maxVariants, maxNeighbors);
-            double kendalsOnTrain = trainAndTest(args[4], retriever, targetMetric,
+            double kendalsOnTrain = trainAndTest(args[3], retriever, targetMetric,
                     QUERY_FILES[DL20], QRELS_FILES[DL20],
                     QUERY_FILES[DL19], QRELS_FILES[DL19],
                     args[1], args[0], maxVariants, maxNeighbors);
