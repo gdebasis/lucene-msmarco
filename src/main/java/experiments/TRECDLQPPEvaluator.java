@@ -270,13 +270,13 @@ public class TRECDLQPPEvaluator {
             OneStepRetriever retriever = new OneStepRetriever(Constants.QUERY_FILE_TEST);
             Settings.init(retriever.getSearcher());
 
-            ///*
+            /*
             for (int i=0; i<=1; i++) {
                 runSingleExperiment(args[3], retriever, QUERY_FILES[i], QRELS_FILES[i], args[i], targetMetric, 5, 0.5f, false);
             }
 
             System.exit(0);
-            //*/
+            */
 
             TauAndSARE kendalsOnTest = trainAndTest(args[3], retriever, targetMetric,
                     QUERY_FILES[DL19], QRELS_FILES[DL19],
