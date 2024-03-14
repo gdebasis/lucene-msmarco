@@ -8,6 +8,7 @@ import retrieval.KNNRelModel;
 import retrieval.MsMarcoQuery;
 import retrieval.TermDistribution;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -16,23 +17,51 @@ public class VariantSpecificity extends NQCSpecificity {
     KNNRelModel knnRelModel;
     int numVariants;
     float lambda;
+    boolean norlamiseScores;
 
     public VariantSpecificity(QPPMethod baseModel,
                               IndexSearcher searcher, KNNRelModel knnRelModel,
                               int numVariants,
                               float lambda) {
+        this(baseModel, searcher, knnRelModel, numVariants, lambda, false);
+    }
+
+    public VariantSpecificity(QPPMethod baseModel,
+                              IndexSearcher searcher, KNNRelModel knnRelModel,
+                              int numVariants,
+                              float lambda, boolean normaliseScores) {
         super(searcher);
 
         this.baseModel = baseModel;
         this.knnRelModel = knnRelModel;
         this.numVariants = numVariants;
         this.lambda = lambda;
+        this.norlamiseScores = normaliseScores;
+    }
+
+    private RetrievedResults normaliseScores(RetrievedResults retInfo) {
+        double minScore = retInfo.getTuples()
+                .stream().map(x->x.getScore()).reduce(Double::min).get();
+        double maxScore = retInfo.getTuples()
+                .stream().map(x->x.getScore()).reduce(Double::max).get();
+        double diff = maxScore - minScore;
+
+        if (norlamiseScores) {
+            retInfo.getTuples()
+                    .forEach(
+                            x -> x.setScore((x.getScore()-minScore)/diff)
+                    );
+        }
+        return retInfo;
     }
 
     @Override
     public double computeSpecificity(MsMarcoQuery q, RetrievedResults retInfo, TopDocs topDocs, int k) {
         List<MsMarcoQuery> knnQueries = null;
         double variantSpec = 0;
+
+        if (norlamiseScores)
+            retInfo = normaliseScores(retInfo);
 
         try {
             if (numVariants > 0)
@@ -64,6 +93,9 @@ public class VariantSpecificity extends NQCSpecificity {
             TopDocs topDocsRQ = searcher.search(rq.getQuery(), k);
             RetrievedResults varInfo = new RetrievedResults(rq.getId(), topDocsRQ);
             //Arrays.stream(varInfo.getRSVs(5)).forEach(System.out::println);
+
+            if (norlamiseScores)
+                varInfo = normaliseScores(varInfo);
 
             variantSpecScore = baseModel.computeSpecificity(rq, varInfo, topDocs, k);
             refSim = rq.getRefSim();

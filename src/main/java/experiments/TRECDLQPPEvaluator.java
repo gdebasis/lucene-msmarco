@@ -61,7 +61,7 @@ public class TRECDLQPPEvaluator {
                 searcher,
                 knnRelModel,
                 numVariants,
-                lambda
+                lambda, Constants.NORMALISE_SCORES
         );
 
         int numQueries = queries.size();
@@ -255,10 +255,10 @@ public class TRECDLQPPEvaluator {
         if (args.length < 4) {
             System.out.println("Required arguments: <res file DL 19> <res file DL 20> <metric (ap/ndcg)> <uef/nqc>");
             args = new String[5];
-            args[0] = "runs/splade.dl19.100.pp";
-            args[1] = "runs/splade.dl20.100.pp";
-            //args[0] = "runs/bm25.mt5.dl19.100";
-            //args[1] = "runs/bm25.mt5.dl20.100";
+            //args[0] = "ColBERT-PRF-VirtualAppendix/BM25/BM25.2019.res";
+            //args[1] = "ColBERT-PRF-VirtualAppendix/BM25/BM25.2020.res";
+            args[0] = "runs/bm25.mt5.dl19.100";
+            args[1] = "runs/bm25.mt5.dl20.100";
             args[2] = "ap";
             args[3] = "nqc";
         }
@@ -270,13 +270,13 @@ public class TRECDLQPPEvaluator {
             OneStepRetriever retriever = new OneStepRetriever(Constants.QUERY_FILE_TEST);
             Settings.init(retriever.getSearcher());
 
-            /*
+            ///*
             for (int i=0; i<=1; i++) {
-                runSingleExperiment(args[3], retriever, QUERY_FILES[i], QRELS_FILES[i], args[i], targetMetric, 3, 0.5f, useRBO);
+                runSingleExperiment(args[3], retriever, QUERY_FILES[i], QRELS_FILES[i], args[i], targetMetric, 5, 0.5f, false);
             }
 
             System.exit(0);
-            */
+            //*/
 
             TauAndSARE kendalsOnTest = trainAndTest(args[3], retriever, targetMetric,
                     QUERY_FILES[DL19], QRELS_FILES[DL19],

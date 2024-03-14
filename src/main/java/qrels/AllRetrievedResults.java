@@ -11,7 +11,6 @@ public class AllRetrievedResults {
     Map<String, RetrievedResults> allRetMap;
     String resFile;
     AllRelRcds allRelInfo;
-    int zeroIndexedAdjustment;
 
     public AllRetrievedResults(String resFile) {
         String line;
@@ -25,6 +24,19 @@ public class AllRetrievedResults {
             }
         }
         catch (Exception ex) { ex.printStackTrace(); }
+
+        sortResults();
+    }
+
+    private void sortResults() {
+        // This ensures that the res file may not have to be sorted; we sort by the scores
+        allRetMap.values().forEach(x->x.sortResultTuples());
+        for (RetrievedResults rr: allRetMap.values()) {
+            int rank = 1;
+            for (ResultTuple tuple: rr.getTuples()) {
+                tuple.rank = rank++;
+            }
+        }
     }
 
     public Set<String> queries() { return this.allRetMap.keySet(); }
@@ -37,6 +49,7 @@ public class AllRetrievedResults {
             rr.addTuple(Settings.getDocIdFromOffset(sd.doc), rank++, sd.score);
         }
         allRetMap.put(qid, rr);
+        sortResults();
     }
 
     public RetrievedResults getRetrievedResultsForQueryId(String qid) {
@@ -50,12 +63,10 @@ public class AllRetrievedResults {
         if (res == null) {
             res = new RetrievedResults(qid);
             allRetMap.put(qid, res);
-            int rank = Integer.parseInt(tokens[3]);
-            zeroIndexedAdjustment = rank==0? 1: 0;
         }
         if (res.rtuples.size() < Constants.NUM_WANTED)
             res.addTuple(tokens[2],
-                    Integer.parseInt(tokens[3]) + zeroIndexedAdjustment,
+                    Integer.parseInt(tokens[3]), // dummy; we later on assign ranks based on the sorted positions
                     Double.parseDouble(tokens[4]));
     }
 

@@ -42,7 +42,7 @@ public class TRECDLQPPEvaluatorWithGenVariants {
                 searcher,
                 knnRelModel,
                 numVariants,
-                lambda
+                lambda, Constants.NORMALISE_SCORES
         );
 
         int numQueries = queries.size();
@@ -220,8 +220,8 @@ public class TRECDLQPPEvaluatorWithGenVariants {
         if (args.length < 5) {
             System.out.println("Required arguments: <res file DL 19> <res file DL 20> <metric (ap/ndcg)> <uef/nqc> <rlm/w2v (variant gen)>");
             args = new String[5];
-            args[0] = "runs/splade.dl19.100.pp";
-            args[1] = "runs/splade.dl20.100.pp";
+            args[0] = "runs/splade.dl19.100";
+            args[1] = "runs/splade.dl20.100";
             args[2] = "ap";
             args[3] = "nqc";
             args[4] = "rlm";
@@ -234,12 +234,12 @@ public class TRECDLQPPEvaluatorWithGenVariants {
             OneStepRetriever retriever = new OneStepRetriever(Constants.QUERY_FILE_TEST);
             Settings.init(retriever.getSearcher());
 
-            /*
+            ///*
             for (int i=0; i<=1; i++) {
-                runSingleExperiment(args[3], retriever, QUERY_FILES[i], QRELS_FILES[i], args[i], targetMetric, 3, 0.5f, variantFile);
+                runSingleExperiment(args[3], retriever, QUERY_FILES[i], QRELS_FILES[i], args[i], targetMetric, 5, 0.5f, variantFile);
             }
             System.exit(0);
-            */
+            //*/
 
             double kendalsOnTest = trainAndTest(args[3], retriever, targetMetric,
                     QUERY_FILES[DL19], QRELS_FILES[DL19],
