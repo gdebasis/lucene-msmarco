@@ -117,6 +117,7 @@ public class KNNRelModel extends SupervisedRLM {
                         knnQuery.setRefSim(computeRBO(q, knnQuery));
 
                     knnQueries = knnQueries.stream().sorted(Comparator.reverseOrder()).collect(Collectors.toList());
+                    //knnQueries.stream().forEach(System.out::println);
                 }
 
                 knnQueryMap.put(q.getId(), knnQueries);
@@ -124,10 +125,15 @@ public class KNNRelModel extends SupervisedRLM {
         }
     }
 
-    float computeRBO(MsMarcoQuery q, MsMarcoQuery refQ) throws Exception {
-        TopDocs topA = searcher.search(q.getQuery(), Constants.RBO_NUM_DOCS);
-        TopDocs topB = searcher.search(refQ.getQuery(), Constants.RBO_NUM_DOCS);
-        return (float)OverlapStats.computeRBO(topA, topB);
+    float computeRBO(MsMarcoQuery q, MsMarcoQuery refQ) {
+        TopDocs topA = null, topB = null;
+        try {
+            topA = searcher.search(q.getQuery(), Constants.RBO_NUM_DOCS);
+            topB = searcher.search(refQ.getQuery(), Constants.RBO_NUM_DOCS);
+        }
+        catch (Exception ex) { ex.printStackTrace(); }
+
+        return topA==null||topB==null? 0 : (float)OverlapStats.computeRBO(topA, topB);
     }
 
     void constructKNNMap(String variantsFile) throws Exception {
@@ -149,14 +155,13 @@ public class KNNRelModel extends SupervisedRLM {
                 MsMarcoQuery testQuery = queryMap.get(qid);
                 if (testQuery==null)
                     continue;  // the variants file is a union of dl'19 and 20... hence safe to discard missing ones
-                rq.setRefSim(computeRBO(testQuery, rq));
+                rq.setRefSim(1.0f); // uniform
 
                 knnQueries.add(rq);
             }
 
-            List<MsMarcoQuery> knnQueries = knnQueryMap.get(qid);
-            knnQueries = knnQueries.stream().sorted(Comparator.reverseOrder()).collect(Collectors.toList());
-            knnQueryMap.put(qid, knnQueries);
+            //List<MsMarcoQuery> knnQueries = knnQueryMap.get(qid);
+            //knnQueries.stream().forEach(System.out::println);
         }
     }
 
@@ -200,6 +205,10 @@ public class KNNRelModel extends SupervisedRLM {
                             sd.score)
                 );
             }
+
+            knnQueries.stream().forEach(x -> x.simWithOrig = computeRBO(query, x));
+            knnQueries = knnQueries.stream().sorted(Comparator.reverseOrder()).collect(Collectors.toList());
+            //knnQueries.forEach(System.out::println);
 
             int relQIndex, relDocIndex;
 
@@ -393,14 +402,19 @@ public class KNNRelModel extends SupervisedRLM {
                 )
             )
         );
+        System.out.println(testQueries);
 
         BufferedWriter bw = new BufferedWriter(new FileWriter(outJSONFile));
+        bw.write("[");
         for (Map.Entry<String, String> e: testQueries.entrySet()) {
             MsMarcoQuery testQuery = new MsMarcoQuery(e.getKey(), e.getValue());
+            System.out.println(testQuery);
             genFewShotExamples(testQuery, Constants.K);
             bw.write(testQuery.fewshotInfo.toJSONString());
+            bw.write(",");
             bw.newLine();
         }
+        bw.write("]");
         bw.close();
     }
 
@@ -584,13 +598,14 @@ public class KNNRelModel extends SupervisedRLM {
 
     public static void main(String[] args) {
         try {
-            KNNRelModel knnRelModel = new KNNRelModel(Constants.QRELS_TRAIN, Constants.QUERY_FILE_TRAIN);
+            System.out.println("Loading queries");
+            KNNRelModel knnRelModel = new KNNRelModel(Constants.QRELS_TRAIN, "data/trecdl/trecdl1920.txt");
             //knnRelModel.retrieve();
 
             if (args.length<2) {
-                System.out.println("usage: retrieval.KNNRelModel <TREC DL evaluation query file (2019/2020)>");
-                args = new String[1];
-                args[0] = Constants.QUERY_FILE_TEST;
+                System.out.println("usage: retrieval.KNNRelModel <TREC DL evaluation query file (2019/2020)> <json file>");
+                args = new String[2];
+                args[0] = "data/trecdl/trecdl1920.txt";
                 args[1] = Constants.FEWSHOT_JSON;
             }
 

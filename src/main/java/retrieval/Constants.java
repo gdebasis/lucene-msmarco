@@ -49,7 +49,7 @@ public interface Constants {
     int EVAL_MIN_REL = 2;
     int NDCG_CUTOFF = 10;
 
-    int RBO_NUM_DOCS = 10;
+    int RBO_NUM_DOCS = 20;
     String QPP_JM_VARIANTS_FILE_W2V = "variants/trecdl_qv_w2v.csv";
     String QPP_JM_VARIANTS_FILE_RLM = "variants/trecdl_qv_rlm.csv";
 }

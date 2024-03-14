@@ -22,13 +22,13 @@ public class MsMarcoQuery implements Comparable<MsMarcoQuery> {
 
     public MsMarcoQuery(String qid, String qText) {
         this(qid, qText, 1);
-        makeQuery();
     }
 
     public MsMarcoQuery(String qid, String qText, float simWithOrig) {
         this.qid = qid;
         this.qText = qText;
         this.simWithOrig = simWithOrig;
+        makeQuery();
     }
 
     public MsMarcoQuery(MsMarcoQuery that, Query query) {

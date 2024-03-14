@@ -55,8 +55,6 @@ public class TRECDLQPPEvaluator {
             Map<String, TopDocs> topDocsMap,
             float lambda, int numVariants, Metric targetMetric) {
 
-        double kendals = 0;
-
         QPPMethod baseModel = baseQPPModelName.equals("nqc")? new NQCSpecificity(searcher): new UEFSpecificity(new NQCSpecificity(searcher));
         QPPMethod qppMethod = new VariantSpecificity(
                 baseModel,
@@ -254,18 +252,19 @@ public class TRECDLQPPEvaluator {
 
     public static void main(String[] args) {
 
-        if (args.length < 5) {
-            System.out.println("Required arguments: <res file DL 19> <res file DL 20> <metric (ap/ndcg)> <uef/nqc> <rbo: true/false>");
+        if (args.length < 4) {
+            System.out.println("Required arguments: <res file DL 19> <res file DL 20> <metric (ap/ndcg)> <uef/nqc>");
             args = new String[5];
-            args[0] = "runs/bm25.mt5.dl19.100";
-            args[1] = "runs/bm25.mt5.dl20.100";
+            args[0] = "runs/splade.dl19.100.pp";
+            args[1] = "runs/splade.dl20.100.pp";
+            //args[0] = "runs/bm25.mt5.dl19.100";
+            //args[1] = "runs/bm25.mt5.dl20.100";
             args[2] = "ap";
             args[3] = "nqc";
-            args[4] = "false";
         }
 
         Metric targetMetric = args[2].equals("ap")? Metric.AP : Metric.nDCG;
-        boolean useRBO = Boolean.parseBoolean(args[4]);
+        //boolean useRBO = Boolean.parseBoolean(args[4]);
 
         try {
             OneStepRetriever retriever = new OneStepRetriever(Constants.QUERY_FILE_TEST);
@@ -282,11 +281,11 @@ public class TRECDLQPPEvaluator {
             TauAndSARE kendalsOnTest = trainAndTest(args[3], retriever, targetMetric,
                     QUERY_FILES[DL19], QRELS_FILES[DL19],
                     QUERY_FILES[DL20], QRELS_FILES[DL20],
-                    args[0], args[1], Constants.QPP_COREL_MAX_VARIANTS, useRBO);
+                    args[0], args[1], Constants.QPP_COREL_MAX_VARIANTS, false);
             TauAndSARE kendalsOnTrain = trainAndTest(args[3], retriever, targetMetric,
                     QUERY_FILES[DL20], QRELS_FILES[DL20],
                     QUERY_FILES[DL19], QRELS_FILES[DL19],
-                    args[1], args[0], Constants.QPP_COREL_MAX_VARIANTS, useRBO);
+                    args[1], args[0], Constants.QPP_COREL_MAX_VARIANTS, false);
 
             double kendals = 0.5*(kendalsOnTrain.tau + kendalsOnTest.tau);
             double sare = 0.5*(kendalsOnTrain.sare + kendalsOnTest.sare);
