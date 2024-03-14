@@ -28,5 +28,17 @@ public class ResultTuple implements Comparable<ResultTuple> {
     public String getDocName() {
         return docName;
     }
+
+    public String toString() {
+        return new StringBuilder()
+                .append("(")
+                .append(docName)
+                .append(", ")
+                .append(rank)
+                .append(", ")
+                .append(score)
+                .append(")")
+        .toString();
+    }
 }
 

@@ -71,11 +71,11 @@ public class KNNRelModel extends SupervisedRLM {
         constructKNNMap(useRBO);
     }
 
-    public KNNRelModel(String qrelFile, String queryFile, String variantsFile) throws Exception {
+    public KNNRelModel(String qrelFile, String queryFile, String variantsFile, boolean useRBO) throws Exception {
         super(qrelFile, queryFile);
         constructQueriesAndQrels(queryFile);
 
-        constructKNNMap(variantsFile);
+        constructKNNMap(variantsFile, useRBO);
     }
 
     public List<MsMarcoQuery> getQueries() { return queryMap.values().stream().collect(Collectors.toList()); }
@@ -136,7 +136,7 @@ public class KNNRelModel extends SupervisedRLM {
         return topA==null||topB==null? 0 : (float)OverlapStats.computeRBO(topA, topB);
     }
 
-    void constructKNNMap(String variantsFile) throws Exception {
+    void constructKNNMap(String variantsFile, boolean useRBO) throws Exception {
         knnQueryMap = new HashMap<>();
 
         List<String> lines = FileUtils.readLines(new File(variantsFile), StandardCharsets.UTF_8);
@@ -144,9 +144,9 @@ public class KNNRelModel extends SupervisedRLM {
         for (String line: lines) {
             String[] tokens = line.split("\\t");
             String qid = tokens[0];
+            List<MsMarcoQuery> knnQueries = knnQueryMap.get(qid);
 
             for (int i=2; i < tokens.length; i++) {
-                List<MsMarcoQuery> knnQueries = knnQueryMap.get(qid);
                 if (knnQueries==null) {
                     knnQueries = new ArrayList<>();
                     knnQueryMap.put(qid, knnQueries);
@@ -155,13 +155,22 @@ public class KNNRelModel extends SupervisedRLM {
                 MsMarcoQuery testQuery = queryMap.get(qid);
                 if (testQuery==null)
                     continue;  // the variants file is a union of dl'19 and 20... hence safe to discard missing ones
-                rq.setRefSim(1.0f); // uniform
+
+                if (!useRBO)
+                    rq.setRefSim(1.0f); // uniform
+                else
+                    rq.setRefSim(computeRBO(queryMap.get(qid), rq)); // uniform
 
                 knnQueries.add(rq);
             }
 
             //List<MsMarcoQuery> knnQueries = knnQueryMap.get(qid);
             //knnQueries.stream().forEach(System.out::println);
+
+            if (useRBO)
+                knnQueries = knnQueries.stream().sorted(Comparator.reverseOrder()).collect(Collectors.toList());
+
+            knnQueryMap.put(qid, knnQueries);
         }
     }
 
@@ -406,12 +415,15 @@ public class KNNRelModel extends SupervisedRLM {
 
         BufferedWriter bw = new BufferedWriter(new FileWriter(outJSONFile));
         bw.write("[");
+        int numEntries = testQueries.keySet().size();
+        int i = 0;
         for (Map.Entry<String, String> e: testQueries.entrySet()) {
             MsMarcoQuery testQuery = new MsMarcoQuery(e.getKey(), e.getValue());
             System.out.println(testQuery);
             genFewShotExamples(testQuery, Constants.K);
             bw.write(testQuery.fewshotInfo.toJSONString());
-            bw.write(",");
+            i++;
+            if (i < numEntries) bw.write(",");
             bw.newLine();
         }
         bw.write("]");

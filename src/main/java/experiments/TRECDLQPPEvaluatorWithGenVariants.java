@@ -81,7 +81,7 @@ public class TRECDLQPPEvaluatorWithGenVariants {
     )
             throws Exception {
         IndexSearcher searcher = retriever.getSearcher();
-        KNNRelModel knnRelModel = new KNNRelModel(Constants.QRELS_TRAIN, trainQueryFile, variantsFile);
+        KNNRelModel knnRelModel = new KNNRelModel(Constants.QRELS_TRAIN, trainQueryFile, variantsFile, Constants.QUERYSIM_USE_RBO);
         List<MsMarcoQuery> trainQueries = knnRelModel.getQueries();
 
         Evaluator evaluatorTrain = new Evaluator(trainQrelsFile, trainResFile); // load ret and rel
@@ -106,7 +106,7 @@ public class TRECDLQPPEvaluatorWithGenVariants {
         }
         System.out.println(String.format("The best settings: lambda=%.1f, nv=%d", p.l, p.numVariants));
         // apply this setting on the test set
-        KNNRelModel knnRelModelTest = new KNNRelModel(Constants.QRELS_TRAIN, testQueryFile, variantsFile);
+        KNNRelModel knnRelModelTest = new KNNRelModel(Constants.QRELS_TRAIN, testQueryFile, variantsFile, Constants.QUERYSIM_USE_RBO);
         List<MsMarcoQuery> testQueries = knnRelModelTest.getQueries(); // these queries are different from train queries
 
         Evaluator evaluatorTest = new Evaluator(testQrelsFile, testResFile); // load ret and rel
@@ -203,7 +203,7 @@ public class TRECDLQPPEvaluatorWithGenVariants {
     )
             throws Exception {
 
-        KNNRelModel knnRelModel = new KNNRelModel(Constants.QRELS_TRAIN, queryFile, variantFile);
+        KNNRelModel knnRelModel = new KNNRelModel(Constants.QRELS_TRAIN, queryFile, variantFile, Constants.QUERYSIM_USE_RBO);
         List<MsMarcoQuery> testQueries = knnRelModel.getQueries(); // these queries are different from train queries
 
         Evaluator evaluatorTest = new Evaluator(qrelsFile, resFile); // load ret and rel

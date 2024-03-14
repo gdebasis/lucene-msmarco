@@ -86,16 +86,24 @@ public class VariantSpecificity extends NQCSpecificity {
         double variantSpecScore;
         double refSim;
 
+        //System.out.println("orig scores:");
+        //retInfo.getTuples().stream().limit(5).forEach(System.out::println);
+
         // apply QPP base model on these estimated relevance scores
         for (MsMarcoQuery rq: knnQueries) {
             //System.out.println(rq.toString());
 
             TopDocs topDocsRQ = searcher.search(rq.getQuery(), k);
             RetrievedResults varInfo = new RetrievedResults(rq.getId(), topDocsRQ);
-            //Arrays.stream(varInfo.getRSVs(5)).forEach(System.out::println);
+
+            //System.out.println("var scores:");
+            //varInfo.getTuples().stream().limit(5).forEach(System.out::println);
 
             if (norlamiseScores)
                 varInfo = normaliseScores(varInfo);
+
+            //System.out.println("var scores after norm:");
+            //varInfo.getTuples().stream().limit(5).forEach(System.out::println);
 
             variantSpecScore = baseModel.computeSpecificity(rq, varInfo, topDocs, k);
             refSim = rq.getRefSim();

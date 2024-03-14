@@ -53,4 +53,5 @@ public interface Constants {
     String QPP_JM_VARIANTS_FILE_W2V = "variants/trecdl_qv_w2v.csv";
     String QPP_JM_VARIANTS_FILE_RLM = "variants/trecdl_qv_rlm.csv";
     boolean NORMALISE_SCORES = true;
+    boolean QUERYSIM_USE_RBO = true;
 }

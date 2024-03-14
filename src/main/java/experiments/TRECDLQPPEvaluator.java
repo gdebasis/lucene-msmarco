@@ -257,8 +257,10 @@ public class TRECDLQPPEvaluator {
             args = new String[5];
             //args[0] = "ColBERT-PRF-VirtualAppendix/BM25/BM25.2019.res";
             //args[1] = "ColBERT-PRF-VirtualAppendix/BM25/BM25.2020.res";
-            args[0] = "runs/bm25.mt5.dl19.100";
-            args[1] = "runs/bm25.mt5.dl20.100";
+            //args[0] = "runs/bm25.mt5.dl19.100";
+            //args[1] = "runs/bm25.mt5.dl20.100";
+            args[0] = "runs/splade.dl19.100";
+            args[1] = "runs/splade.dl20.100";
             args[2] = "ap";
             args[3] = "nqc";
         }
@@ -272,7 +274,7 @@ public class TRECDLQPPEvaluator {
 
             /*
             for (int i=0; i<=1; i++) {
-                runSingleExperiment(args[3], retriever, QUERY_FILES[i], QRELS_FILES[i], args[i], targetMetric, 5, 0.5f, false);
+                runSingleExperiment(args[3], retriever, QUERY_FILES[i], QRELS_FILES[i], args[i], targetMetric, 5, 0.5f, Constants.QUERYSIM_USE_RBO);
             }
 
             System.exit(0);
@@ -281,11 +283,11 @@ public class TRECDLQPPEvaluator {
             TauAndSARE kendalsOnTest = trainAndTest(args[3], retriever, targetMetric,
                     QUERY_FILES[DL19], QRELS_FILES[DL19],
                     QUERY_FILES[DL20], QRELS_FILES[DL20],
-                    args[0], args[1], Constants.QPP_COREL_MAX_VARIANTS, false);
+                    args[0], args[1], Constants.QPP_COREL_MAX_VARIANTS, Constants.QUERYSIM_USE_RBO);
             TauAndSARE kendalsOnTrain = trainAndTest(args[3], retriever, targetMetric,
                     QUERY_FILES[DL20], QRELS_FILES[DL20],
                     QUERY_FILES[DL19], QRELS_FILES[DL19],
-                    args[1], args[0], Constants.QPP_COREL_MAX_VARIANTS, false);
+                    args[1], args[0], Constants.QPP_COREL_MAX_VARIANTS, Constants.QUERYSIM_USE_RBO);
 
             double kendals = 0.5*(kendalsOnTrain.tau + kendalsOnTest.tau);
             double sare = 0.5*(kendalsOnTrain.sare + kendalsOnTest.sare);
