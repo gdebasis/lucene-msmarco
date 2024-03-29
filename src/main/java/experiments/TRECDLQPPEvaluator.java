@@ -56,7 +56,9 @@ public class TRECDLQPPEvaluator {
             float lambda, int numVariants, Metric targetMetric) {
 
         QPPMethod baseModel = baseQPPModelName.equals("nqc")? new NQCSpecificity(searcher): new UEFSpecificity(new NQCSpecificity(searcher));
-        QPPMethod qppMethod = new VariantSpecificity(
+        QPPMethod qppMethod =
+            new CoRelSpecificity(
+            //new VariantSpecificity(
                 baseModel,
                 searcher,
                 knnRelModel,
@@ -247,6 +249,7 @@ public class TRECDLQPPEvaluator {
         TauAndSARE tauAndSARE = runExperiment(baseModelName, retriever.getSearcher(),
                                         knnRelModel, evaluatorTest, testQueries, topDocsMapTest,
                                         l, numVariants, targetMetric);
+
         System.out.println(String.format("Target Metric: %s, tau = %.4f sARE = %.4f", targetMetric.toString(), tauAndSARE.tau, tauAndSARE.sare));
     }
 
@@ -257,10 +260,10 @@ public class TRECDLQPPEvaluator {
             args = new String[5];
             //args[0] = "ColBERT-PRF-VirtualAppendix/BM25/BM25.2019.res";
             //args[1] = "ColBERT-PRF-VirtualAppendix/BM25/BM25.2020.res";
-            //args[0] = "runs/bm25.mt5.dl19.100";
-            //args[1] = "runs/bm25.mt5.dl20.100";
-            args[0] = "runs/splade.dl19.100";
-            args[1] = "runs/splade.dl20.100";
+            args[0] = "runs/bm25.mt5.dl19.100";
+            args[1] = "runs/bm25.mt5.dl20.100";
+            //args[0] = "runs/splade.dl19.100";
+            //args[1] = "runs/splade.dl20.100";
             args[2] = "ap";
             args[3] = "nqc";
         }
@@ -272,14 +275,11 @@ public class TRECDLQPPEvaluator {
             OneStepRetriever retriever = new OneStepRetriever(Constants.QUERY_FILE_TEST);
             Settings.init(retriever.getSearcher());
 
-            /*
-            for (int i=0; i<=1; i++) {
-                runSingleExperiment(args[3], retriever, QUERY_FILES[i], QRELS_FILES[i], args[i], targetMetric, 5, 0.5f, Constants.QUERYSIM_USE_RBO);
-            }
+            runSingleExperiment(args[3], retriever, QUERY_FILES[0], QRELS_FILES[0], args[0], targetMetric, 5, 0.7f, false);
 
             System.exit(0);
-            */
 
+            /*
             TauAndSARE kendalsOnTest = trainAndTest(args[3], retriever, targetMetric,
                     QUERY_FILES[DL19], QRELS_FILES[DL19],
                     QUERY_FILES[DL20], QRELS_FILES[DL20],
@@ -292,6 +292,7 @@ public class TRECDLQPPEvaluator {
             double kendals = 0.5*(kendalsOnTrain.tau + kendalsOnTest.tau);
             double sare = 0.5*(kendalsOnTrain.sare + kendalsOnTest.sare);
             System.out.println(String.format("Target Metric: %s, tau = %.4f, sare = %.4f", targetMetric.toString(), kendals, sare));
+             */
         }
         catch (Exception ex) {
             ex.printStackTrace();

@@ -4,13 +4,14 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TopDocs;
 import qrels.ResultTuple;
 import qrels.RetrievedResults;
+import retrieval.Constants;
 import retrieval.KNNRelModel;
 import retrieval.MsMarcoQuery;
 import retrieval.TermDistribution;
 
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
 public class VariantSpecificity extends NQCSpecificity {
     QPPMethod baseModel;
@@ -39,7 +40,7 @@ public class VariantSpecificity extends NQCSpecificity {
         this.norlamiseScores = normaliseScores;
     }
 
-    private RetrievedResults normaliseScores(RetrievedResults retInfo) {
+    RetrievedResults normaliseScores(RetrievedResults retInfo) {
         double minScore = retInfo.getTuples()
                 .stream().map(x->x.getScore()).reduce(Double::min).get();
         double maxScore = retInfo.getTuples()
@@ -70,7 +71,6 @@ public class VariantSpecificity extends NQCSpecificity {
             if (knnQueries!=null && !knnQueries.isEmpty()) {
                 variantSpec = variantSpecificity(q, knnQueries, retInfo, topDocs, k);
             }
-
         }
         catch (Exception ex) { ex.printStackTrace(); }
 

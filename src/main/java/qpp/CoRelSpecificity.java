@@ -3,88 +3,50 @@ package qpp;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
+import qrels.PerQueryRelDocs;
 import qrels.ResultTuple;
-import retrieval.MsMarcoQuery;
-import retrieval.SupervisedRLM;
-import retrieval.KNNRelModel;
+import retrieval.*;
 import qrels.RetrievedResults;
-import retrieval.TermDistribution;
 
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Set;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
-public class KNN_NQCSpecificity extends NQCSpecificity {
-    QPPMethod baseModel;
-    KNNRelModel knnRelModel;
-    int numVariants;
-    float lambda, mu;
-
-    public KNN_NQCSpecificity(QPPMethod baseModel,
-                              IndexSearcher searcher, KNNRelModel knnRelModel,
-                              int numVariants,
-                              float lambda, float mu) {
-        super(searcher);
-
-        this.baseModel = baseModel;
-        this.knnRelModel = knnRelModel;
-        this.numVariants = numVariants;
-        this.lambda = lambda;
-        this.mu = mu;
+public class CoRelSpecificity extends VariantSpecificity {
+    public CoRelSpecificity(QPPMethod baseModel,
+                            IndexSearcher searcher, KNNRelModel knnRelModel,
+                            int numVariants,
+                            float lambda, boolean normaliseScores) {
+        super(baseModel, searcher, knnRelModel, numVariants, lambda, normaliseScores);
     }
 
     @Override
     public double computeSpecificity(MsMarcoQuery q, RetrievedResults retInfo, TopDocs topDocs, int k) {
         List<MsMarcoQuery> knnQueries = null;
         double variantSpec = 0, colRelSpec = 0;
+        double qppScore = 0;
 
         try {
+            qppScore = (1-lambda)*baseModel.computeSpecificity(q, retInfo, topDocs, k);
             if (numVariants > 0)
                 knnQueries = knnRelModel.getKNNs(q, numVariants);
 
             if (knnQueries != null) {
                 int numRelatedQueries = knnQueries.size();
-                variantSpec = variantSpecificity(q, knnQueries, retInfo, topDocs, k);
-                //colRelSpec = coRelsSpecificity(q, knnQueries.subList(0, Math.min(numNeighbors, numRelatedQueries)), retInfo, topDocs, k);
+                colRelSpec = coRelsSpecificity(knnQueries.subList(0, Math.min(numVariants, numRelatedQueries)), k);
+                qppScore += lambda*colRelSpec;
             }
-
         }
         catch (Exception ex) { ex.printStackTrace(); }
 
-        //return knnQueries!=null? lambda * variantSpec + (1-lambda) * colRelSpec : baseModel.computeSpecificity(q, retInfo, topDocs, k);
-        return knnQueries!=null?
-                lambda * variantSpec + (1-lambda) * baseModel.computeSpecificity(q, retInfo, topDocs, k):
-                baseModel.computeSpecificity(q, retInfo, topDocs, k);
+        return qppScore;
     }
 
-    double variantSpecificity(MsMarcoQuery q, List<MsMarcoQuery> knnQueries,
-                             RetrievedResults retInfo, TopDocs topDocs, int k) throws Exception {
-        double specScore = 0;
-        double z = 0;
-        double variantSpecScore;
-        double refSim;
-
-        // apply QPP base model on these estimated relevance scores
-        for (MsMarcoQuery rq: knnQueries) {
-            //System.out.println(rq.toString());
-
-            TopDocs topDocsRQ = searcher.search(rq.getQuery(), k);
-            RetrievedResults varInfo = new RetrievedResults(rq.getId(), topDocsRQ);
-            //Arrays.stream(varInfo.getRSVs(5)).forEach(System.out::println);
-
-            variantSpecScore = baseModel.computeSpecificity(rq, varInfo, topDocs, k);
-            refSim = rq.getRefSim();
-
-            //System.out.println(String.format("%s %.4f", rq.getId(), variantSpecScore));
-            specScore +=  refSim * variantSpecScore ;
-            z += refSim;
-        }
-
-        return z==0? baseModel.computeSpecificity(q, retInfo, topDocs, k): specScore/z;
-    }
-
+    /*
     double coRelsSpecificity(MsMarcoQuery q, List<MsMarcoQuery> knnQueries,
                              RetrievedResults retInfo, TopDocs topDocs, int k) throws Exception {
         Map<String, Double> knnDocTermWts, thisDocTermWts;
@@ -116,6 +78,41 @@ public class KNN_NQCSpecificity extends NQCSpecificity {
         double corelSpec = baseModel.computeSpecificity(q, coRelInfo, topDocs, k);
         return corelSpec;
         //return corelEstimateAvg;
+    }
+     */
+
+    double coRelsSpecificity(List<MsMarcoQuery> knnQueries, int k) throws Exception {
+
+        int i = 1;
+        double corelScore = 0, corelEstimate = 0, refSim;
+        double z = 0;
+
+        for (MsMarcoQuery rq: knnQueries) {
+            PerQueryRelDocs relDocs = rq.getRelDocSet();
+            if (relDocs==null || relDocs.getRelDocs().isEmpty())
+                continue;
+            String docName = relDocs.getRelDocs().iterator().next();
+            String docText = reader.document(knnRelModel.getDocOffset(docName)).get(Constants.CONTENT_FIELD);
+            MsMarcoQuery docQuery = new MsMarcoQuery(docName, docText);
+
+            TopDocs topQueries = knnRelModel.getQueryIndexSearcher().search(docQuery.getQuery(), 5);
+            System.out.println("Rel doc: " + docText);
+            for (ScoreDoc sd: topQueries.scoreDocs) {
+                System.out.println("Retrieved query: " + knnRelModel.getQueryIndexSearcher().getIndexReader().document(sd.doc).get(Constants.CONTENT_FIELD) + ", score: " + sd.score);
+            }
+
+            RetrievedResults topQueriesRetrievedResults = new RetrievedResults(rq.getId(), topQueries);
+            if (norlamiseScores)
+                topQueriesRetrievedResults = normaliseScores(topQueriesRetrievedResults);
+
+            corelEstimate = baseModel.computeSpecificity(rq, topQueriesRetrievedResults, null, k);
+            refSim = rq.getRefSim();
+
+            corelScore += refSim * corelEstimate;
+            z += refSim;
+        }
+
+        return corelScore/z;
     }
 
 }

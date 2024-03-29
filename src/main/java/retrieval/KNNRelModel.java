@@ -107,9 +107,11 @@ public class KNNRelModel extends SupervisedRLM {
             List<MsMarcoQuery> knnQueries = knnQueryMap.get(q.getId());
             if (knnQueries == null) {
                 knnQueries = q.retrieveSimilarQueries(
+                        this.rels,
                         getQueryIndexSearcher(),
                         Constants.QPP_COREL_MAX_VARIANTS)
                 ;
+
 
                 // Replace BM25 similarities with RBO similarities. Just to be consistent with gen variants...
                 if (useRBO) {
@@ -199,24 +201,32 @@ public class KNNRelModel extends SupervisedRLM {
         JSONArray relatedQueries = new JSONArray();
 
         try {
-            Query luceneQuery = makeQuery(query.qText);
-            List<MsMarcoQuery> knnQueries = new ArrayList<>();
-            Map<String, Double> rel;
+            List<MsMarcoQuery> knnQueries = query.retrieveSimilarQueries(
+                    this.rels,
+                    getQueryIndexSearcher(),
+                    100)
+            ;
 
+            /*
             TopDocs knnQueriesTopDocs = qIndexSearcher.search(luceneQuery, k);
             for (ScoreDoc sd : knnQueriesTopDocs.scoreDocs) {
                 Document q = qIndexReader.document(sd.doc);
                 knnQueries.add(
                         new MsMarcoQuery(
-                            q.get(Constants.ID_FIELD),
                             q.get(Constants.CONTENT_FIELD),
                             //MsMarcoIndexer.analyze(analyzer, q.get(Constants.CONTENT_FIELD)),
                             sd.score)
                 );
             }
+            */
 
-            knnQueries.stream().forEach(x -> x.simWithOrig = computeRBO(query, x));
-            knnQueries = knnQueries.stream().sorted(Comparator.reverseOrder()).collect(Collectors.toList());
+            //System.out.println(knnQueries.size());
+            knnQueries = knnQueries.stream().filter(x -> x.relDocs!=null).limit(10).collect(Collectors.toList());
+            //System.out.println(knnQueries.size());
+            //knnQueries.stream().map(x->x.relDocs.getRelDocs().size()).forEach(System.out::println);
+
+            //knnQueries.stream().forEach(x -> x.simWithOrig = computeRBO(query, x));
+            //knnQueries = knnQueries.stream().sorted(Comparator.reverseOrder()).collect(Collectors.toList());
             //knnQueries.forEach(System.out::println);
 
             int relQIndex, relDocIndex;
