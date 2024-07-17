@@ -9,8 +9,8 @@ public class FairnessMetrics {
     public FairnessMetrics(String line) {
         String[] tokens = line.split("\\s+");
         qid = tokens[0];
-        awrf = Float.parseFloat(tokens[1]);
-        ndcg = Float.parseFloat(tokens[2]);
+        awrf = Float.parseFloat(tokens[2]);
+        ndcg = Float.parseFloat(tokens[1]);
         combined = awrf * ndcg;
     }
 

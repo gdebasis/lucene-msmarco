@@ -3,8 +3,11 @@ package retrieval;
 public interface Constants {
     String ID_FIELD = "id";
     String CONTENT_FIELD = "words";
+    String TREC_FAIR_IR_RESDIR = "fair_ir/runs";
+    String TREC_FAIR_IR_EVALDIR = "fair_ir/evals";
     String TREC_FAIR_IR_COLL = "/Users/debasis/research/fair_ir/coll.jsonl";
     String TREC_FAIR_IR_INDEX = "/Users/debasis/research/fair_ir/index";
+    String TREC_FAIR_IR_QUERY_FILE = "/Users/debasis/research/fair_ir/queries/topics.tsv/";
     String MSMARCO_COLL = "data/collection.tsv";
     String MSMARCO_INDEX = "index/";
     String MSMARCO_QUERY_INDEX = "query_index/";
@@ -58,6 +61,7 @@ public interface Constants {
     boolean QUERYSIM_USE_RBO = true;
 
     double MSMARCO_PASSAGE_AVG_LEN = 57.25;
+    double FAIRNESS_COLL_AVG_LEN = 2.5f;
 
     String QRELS_DL1920 = "data/trecdl/trecdl1920.qrels";
     String QUERIES_DL1920 = "data/trecdl/trecdl1920.queries";

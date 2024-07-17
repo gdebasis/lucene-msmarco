@@ -5,6 +5,7 @@ import org.apache.lucene.search.TopDocs;
 import qpp.QPPMethod;
 import qrels.AllRetrievedResults;
 import retrieval.MsMarcoQuery;
+import retrieval.QueryLoader;
 
 import java.io.File;
 import java.util.HashMap;
@@ -13,6 +14,7 @@ import java.util.Map;
 
 public class PreRetrievedResults {
     String name;
+    Map<String, MsMarcoQuery> queries;
     Map<String, TopDocs> topDocsMap; // a list of topDocs for the query set
 
     public PreRetrievedResults(PreRetrievedResults that) {
@@ -20,13 +22,15 @@ public class PreRetrievedResults {
         this.topDocsMap = new HashMap<>(that.topDocsMap);
     }
 
-    public PreRetrievedResults(IndexReader reader, File resFile) throws Exception {
+    public PreRetrievedResults(IndexReader reader, File resFile, String queryFile) throws Exception {
         this.name = resFile.getName();
-        AllRetrievedResults allRetrievedResults = new AllRetrievedResults(resFile.getPath(), 20, true);
+        queries = QueryLoader.constructQueryMap(queryFile);
+
+        AllRetrievedResults allRetrievedResults = new AllRetrievedResults(resFile.getPath(), 10, true);
 
         // induce the ranks and scores because here it's a minimalist result file with no score.
-        System.out.println("Inducing scores...");
-        allRetrievedResults.induceScores(reader);
+        //System.out.println("Inducing scores...");
+        allRetrievedResults.induceScores(reader, queries);
         topDocsMap = allRetrievedResults.castToTopDocs();
     }
 

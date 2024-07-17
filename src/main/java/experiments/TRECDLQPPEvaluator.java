@@ -8,10 +8,7 @@ import qrels.Evaluator;
 import qrels.Metric;
 import qpp.*;
 
-import retrieval.Constants;
-import retrieval.KNNRelModel;
-import retrieval.MsMarcoQuery;
-import retrieval.OneStepRetriever;
+import retrieval.*;
 import utils.IndexUtils;
 
 import java.util.List;
@@ -170,7 +167,7 @@ public class TRECDLQPPEvaluator {
         QPPEvaluator qppEvaluator = new QPPEvaluator(
                 trainQueryFile, trainQrelsFile,
                 new KendalCorrelation(), retriever.getSearcher(), Constants.QPP_NUM_TOPK);
-        List<MsMarcoQuery> trainQueries = qppEvaluator.constructQueries(trainQueryFile);
+        List<MsMarcoQuery> trainQueries = QueryLoader.constructQueries(trainQueryFile);
 
         Map<String, TopDocs> topDocsMap = evaluatorTrain.getAllRetrievedResults().castToTopDocs();
 
@@ -205,7 +202,7 @@ public class TRECDLQPPEvaluator {
         QPPEvaluator qppEvaluatorTest = new QPPEvaluator(
                 testQueryFile, testQrelsFile,
                 new KendalCorrelation(), retriever.getSearcher(), Constants.QPP_NUM_TOPK);
-        List<MsMarcoQuery> testQueries = qppEvaluatorTest.constructQueries(testQueryFile); // these queries are different from train queries
+        List<MsMarcoQuery> testQueries = QueryLoader.constructQueries(testQueryFile); // these queries are different from train queries
 
         Map<String, TopDocs> topDocsMapTest = evaluatorTest.getAllRetrievedResults().castToTopDocs();
         TauAndSARE tauAndSARE_Test = runExperiment(baseModelName,
@@ -236,7 +233,7 @@ public class TRECDLQPPEvaluator {
         QPPEvaluator qppEvaluatorTest = new QPPEvaluator(
                 queryFile, qrelsFile,
                 new KendalCorrelation(), retriever.getSearcher(), Constants.QPP_NUM_TOPK);
-        List<MsMarcoQuery> testQueries = qppEvaluatorTest.constructQueries(queryFile); // these queries are different from train queries
+        List<MsMarcoQuery> testQueries = QueryLoader.constructQueries(queryFile); // these queries are different from train queries
 
         Map<String, TopDocs> topDocsMapTest = evaluatorTest.getAllRetrievedResults().castToTopDocs();
         TauAndSARE tauAndSARE = runExperiment(baseModelName, retriever.getSearcher(),

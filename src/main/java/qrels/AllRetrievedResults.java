@@ -1,4 +1,5 @@
 package qrels;
+import retrieval.MsMarcoQuery;
 import utils.IndexUtils;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.*;
@@ -36,11 +37,13 @@ public class AllRetrievedResults {
         this(resFile, 0);
     }
 
-    public void induceScores(IndexReader reader) throws Exception {
+    public void induceScores(IndexReader reader, Map<String, MsMarcoQuery> queries) throws Exception {
         for (Map.Entry<String, RetrievedResults> e: allRetMap.entrySet()) {
-            System.out.println("Inducing scores for query " + e.getKey());
+            String qid = e.getKey();
+            MsMarcoQuery query = queries.get(qid);
+            //System.out.println("Inducing scores for query " + query.getQueryTerms().toString());
             RetrievedResults retRes = e.getValue();
-            retRes.induceScores(reader);
+            retRes.induceScores(reader, query);
         }
     }
 

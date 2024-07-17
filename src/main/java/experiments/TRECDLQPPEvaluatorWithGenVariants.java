@@ -10,10 +10,7 @@ import qpp.VariantSpecificity;
 import qrels.Evaluator;
 import qrels.Metric;
 import qrels.RetrievedResults;
-import retrieval.Constants;
-import retrieval.KNNRelModel;
-import retrieval.MsMarcoQuery;
-import retrieval.OneStepRetriever;
+import retrieval.*;
 import utils.IndexUtils;
 
 import java.util.List;
@@ -177,7 +174,7 @@ public class TRECDLQPPEvaluatorWithGenVariants {
         QPPEvaluator qppEvaluatorTest = new QPPEvaluator(
                 testQueryFile, testQrelsFile,
                 new KendalCorrelation(), retriever.getSearcher(), Constants.QPP_NUM_TOPK);
-        List<MsMarcoQuery> testQueries = qppEvaluatorTest.constructQueries(testQueryFile); // these queries are different from train queries
+        List<MsMarcoQuery> testQueries = QueryLoader.constructQueries(testQueryFile); // these queries are different from train queries
 
         Map<String, TopDocs> topDocsMapTest = evaluatorTest.getAllRetrievedResults().castToTopDocs();
         double kendals_Test = runExperiment(baseModelName,

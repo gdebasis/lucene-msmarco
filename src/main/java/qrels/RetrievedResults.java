@@ -1,5 +1,6 @@
 package qrels;
 
+import retrieval.*;
 import utils.IndexUtils;
 import fdbk.PerDocTermVector;
 import fdbk.RetrievedDocTermInfo;
@@ -8,14 +9,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
-import retrieval.TermWtUtil;
-import retrieval.Constants;
-import retrieval.OneStepRetriever;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class RetrievedResults implements Comparable<RetrievedResults> {
@@ -49,27 +44,37 @@ public class RetrievedResults implements Comparable<RetrievedResults> {
         numRelRet = -1;
     }
 
-    float bm25Weight(IndexReader reader, int docId) throws Exception {
+    float induceTermWeight(IndexReader reader, MsMarcoQuery query, int docId) throws Exception {
         int N = reader.numDocs();
         PerDocTermVector docvec = OneStepRetriever.buildStatsForSingleDoc(reader, docId);
         float docLen = (float)(docvec.getPerDocStats().values().stream().map(x -> x.getTf()).mapToInt(i -> i.intValue()).sum());
         float bm25_wt = 0;
 
-        for (RetrievedDocTermInfo tinfo : docvec.getPerDocStats().values()) {
-            int n = reader.docFreq(new Term(Constants.CONTENT_FIELD, tinfo.getTerm()));
-            //bm25_wt += TermWtUtil.tfIdfWeight(tinfo.getTf(), N, n);
-            bm25_wt += TermWtUtil.bm25Weight(1.5f, 0.75f, tinfo.getTf(), N, n, docLen);
+        Set<Term> queryTerms = query.getQueryTerms();
+
+        //for (RetrievedDocTermInfo tinfo : docvec.getPerDocStats().values()) {
+        for (Term t: queryTerms) {
+            int n = reader.docFreq(t);
+            RetrievedDocTermInfo tInfo = docvec.getTermStats(t.text());
+            if (tInfo==null) continue; // we may not find all the query terms in this document...
+
+            int f = tInfo.getTf();
+            //float wt = TermWtUtil.tfIdfWeight(f, N, n);
+            float wt = TermWtUtil.lmjmWeight(f, N, n, docLen, 0.2f);
+            //float wt = TermWtUtil.bm25Weight(1.2f, 0.75f, f, N, n, docLen);
+            //System.out.println(String.format("wt(%s) = %.4f", t.text(), wt));
+            bm25_wt += wt;
         }
         return bm25_wt;
     }
 
-    public void induceScores(IndexReader reader) throws Exception {
+    public void induceScores(IndexReader reader, MsMarcoQuery query) throws Exception {
         for (ResultTuple rTuple: rtuples) {
             String docName = rTuple.getDocName();
             int docId = IndexUtils.getDocOffsetFromId(docName);
             if (docId >= 0) {
-                System.out.print(String.format("Computing BM25 weights for %s\r", docName));
-                rTuple.score = bm25Weight(reader, docId);
+                //System.out.print(String.format("Computing BM25 weights for %s\r", docName));
+                rTuple.score = induceTermWeight(reader, query, docId);
             }
         }
 
@@ -79,8 +84,8 @@ public class RetrievedResults implements Comparable<RetrievedResults> {
         for (ResultTuple rtuple: rtuples) {
             rtuple.rank = rank++;
         }
-        System.out.println("Induced scores:");
-        System.out.println(this.toString());
+        //System.out.println("Induced scores:");
+        //System.out.println(this.toString());
     }
 
     public String getQid() { return qid; }

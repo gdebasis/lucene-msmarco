@@ -13,6 +13,7 @@ import correlation.QPPCorrelationMetric;
 import qrels.*;
 import retrieval.Constants;
 import retrieval.MsMarcoQuery;
+import retrieval.QueryLoader;
 import utils.IndexUtils;
 
 import java.io.*;
@@ -39,60 +40,10 @@ public class QPPEvaluator {
         this.qrelsFile = qrelsFile;
     }
 
-    private static List<String> buildStopwordList() {
-        List<String> stopwords = new ArrayList<>();
-        String line;
-
-        try (FileReader fr = new FileReader("stop.txt");
-             BufferedReader br = new BufferedReader(fr)) {
-            while ( (line = br.readLine()) != null ) {
-                stopwords.add(line.trim());
-            }
-        }
-        catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return stopwords;
-    }
-
-    public static Analyzer englishAnalyzerWithSmartStopwords() {
-        return new EnglishAnalyzer(
-                StopFilter.makeStopSet(buildStopwordList())); // default analyzer
-    }
-
     public IndexReader getReader() { return reader; }
 
     public List<MsMarcoQuery> constructQueries() throws Exception {
-        return constructQueries(queryFile);
-    }
-
-    public List<MsMarcoQuery> constructQueries(String queryFile) throws Exception {
-        Map<String, String> testQueries =
-            FileUtils.readLines(new File(queryFile), StandardCharsets.UTF_8)
-                    .stream()
-                    .map(x -> x.split("\t"))
-                    .collect(Collectors.toMap(x -> x[0], x -> x[1])
-                    )
-        ;
-
-        List<MsMarcoQuery> queries = new ArrayList<>();
-        for (Map.Entry<String, String> e : testQueries.entrySet()) {
-            String qid = e.getKey();
-            String queryText = e.getValue();
-            MsMarcoQuery msMarcoQuery = new MsMarcoQuery(qid, queryText, makeQuery(queryText));
-            queries.add(msMarcoQuery);
-        }
-        return queries;
-    }
-
-    public Query makeQuery(String queryText) {
-        BooleanQuery.Builder qb = new BooleanQuery.Builder();
-        String[] tokens = IndexUtils.analyze(englishAnalyzerWithSmartStopwords(), queryText).split("\\s+");
-        for (String token: tokens) {
-            TermQuery tq = new TermQuery(new Term(Constants.CONTENT_FIELD, token));
-            qb.add(new BooleanClause(tq, BooleanClause.Occur.SHOULD));
-        }
-        return (Query)qb.build();
+        return QueryLoader.constructQueries(queryFile);
     }
 
     public TopDocs retrieve(MsMarcoQuery query, Similarity sim, int numWanted) throws IOException {

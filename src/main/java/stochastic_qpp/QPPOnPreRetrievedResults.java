@@ -2,6 +2,8 @@ package stochastic_qpp;
 
 import correlation.KendalCorrelation;
 import correlation.QPPCorrelationMetric;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.EmptyFileFilter;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
@@ -25,9 +27,9 @@ public class QPPOnPreRetrievedResults {
     PreEvaluatedResults preEvaluatedResults;
     QPPCorrelationMetric qppCorrelationMetric;
 
-    public QPPOnPreRetrievedResults(IndexReader reader, String resFile, String evalResFile) throws Exception {
+    public QPPOnPreRetrievedResults(IndexReader reader, String resFile, String evalResFile, String queryFile) throws Exception {
         System.out.println("Loading results from " + resFile);
-        preRetrievedResults = new PreRetrievedResults(reader, new File(resFile));
+        preRetrievedResults = new PreRetrievedResults(reader, new File(resFile), queryFile);
 
         System.out.println("Loading per-query evaluation from " + evalResFile);
         preEvaluatedResults = new PreEvaluatedResults(evalResFile);
@@ -54,44 +56,69 @@ public class QPPOnPreRetrievedResults {
         double[] gt_vals_array = gt_vals.stream().mapToDouble(x -> x).toArray();
         double[] pred_vals_array = pred_vals.stream().mapToDouble(x -> x).toArray();
 
+        //System.out.println(Arrays.toString(gt_vals_array));
+        //System.out.println(Arrays.toString(pred_vals_array));
+
         return qppCorrelationMetric.correlation(gt_vals_array, pred_vals_array);
     }
 
+    static double evaluate(QPPOnPreRetrievedResults qppOnPreRetrievedResults,
+                           QPPMethod qppMethod, Metric targetMetric,
+                           QPPCorrelationMetric correlationMetric) {
+        qppOnPreRetrievedResults.configure(targetMetric, correlationMetric);
+        return qppOnPreRetrievedResults.evaluate(qppMethod);
+    }
+
     public static void main(String[] args) {
-        final Metric[] targetMetricNames = {Metric.AWRF, Metric.nDCG, Metric.AWRF_NDCG};
-        QPPMethod[] qppMethods = {
-                new NQCSpecificity(),
-                new CumulativeNQC(),
-                new RSDSpecificity(new NQCSpecificity())
-        };
-
-        if (args.length < 2) {
-            args = new String[2];
-            args[0] = "/Users/debasis/research/fair_ir/runs/coordinators_runs/input.0mt5";
-            args[1] = "/Users/debasis/research/fair_ir/runs/coordinators_summary/summary.0mt5.coord.tsv";
-        }
-
-        String resFile = args[0];
-        String evalResFile = args[1];
-        String indexDir = Constants.TREC_FAIR_IR_INDEX;
 
         try {
-            IndexReader reader = DirectoryReader.open(FSDirectory.open(new File(indexDir).toPath()));
+            IndexReader reader = DirectoryReader.open(FSDirectory.open(new File(Constants.TREC_FAIR_IR_INDEX).toPath()));
             IndexSearcher searcher = new IndexSearcher(reader);
             searcher.setSimilarity(new BM25Similarity());
             IndexUtils.init(searcher);
 
-            QPPOnPreRetrievedResults qppOnPreRetrievedResults = new QPPOnPreRetrievedResults(reader, resFile, evalResFile);
+            final Metric[] targetMetricNames = {Metric.AWRF, Metric.nDCG, Metric.AWRF_NDCG};
+            final QPPMethod[] qppMethods = {
+                    new NQCSpecificity(searcher),
+                    new CumulativeNQC(searcher),
+                    //new RSDSpecificity(new NQCSpecificity(searcher))
+            };
 
-            for (Metric targetMetric : targetMetricNames) {
-                qppOnPreRetrievedResults.configure(targetMetric, new KendalCorrelation());
 
-                for (QPPMethod qppMethod : qppMethods) {
-                    double corr = qppOnPreRetrievedResults.evaluate(qppMethod);
+            final QPPCorrelationMetric correlationMetric = new KendalCorrelation();
+
+            File[] resFiles = new File(Constants.TREC_FAIR_IR_RESDIR).listFiles();
+            File[] evalFiles = new File(Constants.TREC_FAIR_IR_EVALDIR).listFiles();
+
+            Arrays.sort(resFiles);
+            Arrays.sort(evalFiles);
+
+            int N = resFiles.length;
+            QPPOnPreRetrievedResults qppOnPreRetrievedResults[] = new QPPOnPreRetrievedResults[N];
+
+            for (int i = 0; i < N; i++) {
+                qppOnPreRetrievedResults[i] =
+                        new QPPOnPreRetrievedResults(
+                                reader, resFiles[i].getPath(),
+                                evalFiles[i].getPath(), Constants.TREC_FAIR_IR_QUERY_FILE
+                        );
+            }
+
+            for (Metric targetMetric : targetMetricNames) { // nDCG, AWRF
+                for (QPPMethod qppMethod : qppMethods) { // NQC, CNQC
+                    double avg_corr = 0;
+                    for (int i=0; i < N; i++) { // aggregate over each o/p
+                        double corr = evaluate(
+                                qppOnPreRetrievedResults[i],
+                                qppMethod, targetMetric, correlationMetric
+                        );
+                        avg_corr += corr;
+                    }
+
                     System.out.println(String.format("%s %s: %s = %.4f",
                             qppMethod.name(), targetMetric.toString(),
-                            qppOnPreRetrievedResults.qppCorrelationMetric.name(),
-                            corr));
+                            correlationMetric.name(),
+                            avg_corr/N));
                 }
             }
         }
