@@ -26,10 +26,11 @@ public class QPPOnPreRetrievedResults {
     PreRetrievedResults preRetrievedResults;
     PreEvaluatedResults preEvaluatedResults;
     QPPCorrelationMetric qppCorrelationMetric;
+    static Map<String, Float> inducedDocScoreCache = new HashMap<>();
 
     public QPPOnPreRetrievedResults(IndexReader reader, String resFile, String evalResFile, String queryFile) throws Exception {
         System.out.println("Loading results from " + resFile);
-        preRetrievedResults = new PreRetrievedResults(reader, new File(resFile), queryFile);
+        preRetrievedResults = new PreRetrievedResults(reader, new File(resFile), queryFile, inducedDocScoreCache);
 
         System.out.println("Loading per-query evaluation from " + evalResFile);
         preEvaluatedResults = new PreEvaluatedResults(evalResFile);

@@ -22,15 +22,16 @@ public class PreRetrievedResults {
         this.topDocsMap = new HashMap<>(that.topDocsMap);
     }
 
-    public PreRetrievedResults(IndexReader reader, File resFile, String queryFile) throws Exception {
+    public PreRetrievedResults(IndexReader reader, File resFile,
+        String queryFile, Map<String, Float> inducedDocScoreCache) throws Exception {
         this.name = resFile.getName();
         queries = QueryLoader.constructQueryMap(queryFile);
 
-        AllRetrievedResults allRetrievedResults = new AllRetrievedResults(resFile.getPath(), 10, true);
+        AllRetrievedResults allRetrievedResults = new AllRetrievedResults(resFile.getPath(), true);
 
         // induce the ranks and scores because here it's a minimalist result file with no score.
         //System.out.println("Inducing scores...");
-        allRetrievedResults.induceScores(reader, queries);
+        allRetrievedResults.induceScores(reader, queries, inducedDocScoreCache);
         topDocsMap = allRetrievedResults.castToTopDocs();
     }
 

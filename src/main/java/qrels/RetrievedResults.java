@@ -68,14 +68,17 @@ public class RetrievedResults implements Comparable<RetrievedResults> {
         return bm25_wt;
     }
 
-    public void induceScores(IndexReader reader, MsMarcoQuery query) throws Exception {
+    public void induceScores(IndexReader reader, MsMarcoQuery query, Map<String, Float> inducedDocScoreCache) throws Exception {
         for (ResultTuple rTuple: rtuples) {
             String docName = rTuple.getDocName();
-            int docId = IndexUtils.getDocOffsetFromId(docName);
-            if (docId >= 0) {
+            Float wt = inducedDocScoreCache.get(docName + ":" + query.getId());
+            if (wt == null) {
+                int docId = IndexUtils.getDocOffsetFromId(docName);
                 //System.out.print(String.format("Computing BM25 weights for %s\r", docName));
-                rTuple.score = induceTermWeight(reader, query, docId);
+                wt = induceTermWeight(reader, query, docId);
+                inducedDocScoreCache.put(docName + ":" + query.getId(), wt);
             }
+            rTuple.score = wt;
         }
 
         sortResultTuples();

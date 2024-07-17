@@ -29,6 +29,22 @@ public class AllRetrievedResults {
         sortResults();
     }
 
+    public AllRetrievedResults(String resFile, boolean skipHeader) {
+        String line;
+        this.resFile = resFile;
+
+        allRetMap = new TreeMap<>();
+        try (FileReader fr = new FileReader(resFile); BufferedReader br = new BufferedReader(fr); ) {
+            if (skipHeader) br.readLine();
+            while ((line = br.readLine()) != null) {
+                storeRetRcd(line);
+            }
+        }
+        catch (Exception ex) { ex.printStackTrace(); }
+
+        sortResults();
+    }
+
     public AllRetrievedResults(String resFile, int numWanted) {
         this(resFile, numWanted, false);
     }
@@ -37,13 +53,16 @@ public class AllRetrievedResults {
         this(resFile, 0);
     }
 
-    public void induceScores(IndexReader reader, Map<String, MsMarcoQuery> queries) throws Exception {
+    public void induceScores(IndexReader reader,
+        Map<String, MsMarcoQuery> queries,
+        Map<String, Float> inducedDocScoreCache) throws Exception {
+
         for (Map.Entry<String, RetrievedResults> e: allRetMap.entrySet()) {
             String qid = e.getKey();
             MsMarcoQuery query = queries.get(qid);
             //System.out.println("Inducing scores for query " + query.getQueryTerms().toString());
             RetrievedResults retRes = e.getValue();
-            retRes.induceScores(reader, query);
+            retRes.induceScores(reader, query, inducedDocScoreCache);
         }
     }
 
@@ -80,6 +99,35 @@ public class AllRetrievedResults {
 
     public RetrievedResults getRetrievedResultsForQueryId(String qid) {
         return allRetMap.get(qid);
+    }
+
+    String storeRetRcd(String line) {
+        String[] tokens = line.split("\\s+");
+
+        /* Here we check for two different file types (the third one we leave for a subclass):
+        1. RES file --- TREC style 6 column file
+        2. Minimalist two column file --- 1st column  QID, 2nd column Doc Name (Rank is the presented order)
+        3. Minimalist res file for stochastic ranking ---
+        1st column  QID, 2nd column rank number, 3rd column Doc Name (Rank is the presented order)
+        */
+
+        String qid = tokens[0];
+        RetrievedResults res = allRetMap.get(qid);
+        if (res == null) {
+            res = new RetrievedResults(qid);
+            allRetMap.put(qid, res);
+        }
+
+        if (tokens.length >= 6) { // 6 column file
+            res.addTuple(tokens[2],
+                    Integer.parseInt(tokens[3]), // dummy; we later on assign ranks based on the sorted positions
+                    Double.parseDouble(tokens[4])
+            );
+        }
+        else {
+            res.addTuple(tokens[1]); // <QID> <RANK> tuples
+        }
+        return qid;
     }
 
     String storeRetRcd(String line, int numWanted) {
