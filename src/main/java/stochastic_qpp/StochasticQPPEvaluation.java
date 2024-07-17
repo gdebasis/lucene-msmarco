@@ -1,10 +1,6 @@
 package stochastic_qpp;
 
-import correlation.KendalCorrelation;
-import correlation.SARE;
-import experiments.Settings;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.lucene.search.Query;
+import utils.IndexUtils;
 import org.apache.lucene.search.TopDocs;
 import qpp.*;
 import qrels.Evaluator;
@@ -16,21 +12,6 @@ import retrieval.OneStepRetriever;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.util.*;
-
-class TauAndSARE {
-    double tau;
-    double[] perQuerySARE;
-
-    TauAndSARE(double tau, double[] perQuerySARE) {
-        this.perQuerySARE = perQuerySARE;
-        this.tau = tau;
-    }
-
-    TauAndSARE(double[] gt, double[] pred) {
-        tau = new KendalCorrelation().correlation(gt, pred);
-        perQuerySARE = new SARE().computeSAREPerQuery(gt, pred);
-    }
-}
 
 public class StochasticQPPEvaluation {
     List<MsMarcoQuery> queries;
@@ -59,7 +40,7 @@ public class StochasticQPPEvaluation {
         //retriever.retrieve(); just use the res file to load per-query retrieved tuples
 
         queries = retriever.getQueryList();
-        Settings.init(retriever.getSearcher());
+        IndexUtils.init(retriever.getSearcher());
 
         Evaluator origRankedListEvaluator = new Evaluator(qrelsFile, resFile);
 

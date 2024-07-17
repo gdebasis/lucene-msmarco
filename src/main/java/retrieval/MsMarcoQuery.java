@@ -123,6 +123,9 @@ public class MsMarcoQuery implements Comparable<MsMarcoQuery> {
     public void setRefSim(float refSim) { simWithOrig = refSim; }
 
     public String toString() {
+        if (relDocs==null) {
+            return String.format("%s, %s: (%.4f)", qText, query, simWithOrig);
+        }
         return String.format("%s, %s: (%.4f), #numrels = %d",
                 qText, query, simWithOrig, relDocs==null? 0: relDocs.getRelDocs().size());
     }

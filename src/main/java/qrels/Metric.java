@@ -4,5 +4,7 @@ public enum Metric {
     AP,
     P_10,
     Recall,
-    nDCG
+    nDCG,
+    AWRF,
+    AWRF_NDCG
 }

@@ -4,6 +4,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.StopFilter;
+import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
@@ -21,12 +22,27 @@ import java.nio.charset.StandardCharsets;
 
 public class MsMarcoIndexer {
 
-    static public Analyzer constructAnalyzer() {
+    static public Analyzer constructAnalyzer(String analyzerName) {
         try {
-            return new EnglishAnalyzer(StopFilter.makeStopSet(FileUtils.readLines(new File(Constants.STOP_FILE), StandardCharsets.UTF_8)));
+            if (!analyzerName.equalsIgnoreCase("english")) {
+                return new WhitespaceAnalyzer();
+            }
+            else {
+                return new
+                        EnglishAnalyzer(
+                        StopFilter.makeStopSet(
+                                FileUtils.readLines(new File(Constants.STOP_FILE), StandardCharsets.UTF_8))
+                );
+            }
         }
-        catch (IOException ex) { ex.printStackTrace(); }
+        catch (IOException ex) {
+            ex.printStackTrace();
+        }
         return null;
+    }
+
+    static public Analyzer constructAnalyzer() {
+        return constructAnalyzer("english");
     }
 
     void indexCollection(String collFile, String indexDir) throws Exception {
@@ -130,14 +146,21 @@ public class MsMarcoIndexer {
     }
 
     public static void main(String[] args) {
+        if (args.length < 2) {
+            System.err.println("Required arguments: <collection file> <index output directory>");
+            args = new String[2];
+            args[0] = Constants.MSMARCO_COLL;
+            args[1] = Constants.MSMARCO_INDEX;
+        }
+
         try {
+            System.out.println("Indexing documents from the file " + args[0] + " into " + args[1]);
             MsMarcoIndexer indexer = new MsMarcoIndexer();
-            indexer.indexCollection(Constants.MSMARCO_COLL, Constants.MSMARCO_INDEX);
+            indexer.indexCollection(args[0], args[1]);
 
-            System.out.println("Indexing queries...");
-
+            //System.out.println("Indexing queries...");
             // Also index the queries
-            indexer.indexCollection(Constants.QUERY_FILE_TRAIN, Constants.MSMARCO_QUERY_INDEX);
+            //indexer.indexCollection(Constants.QUERY_FILE_TRAIN, Constants.MSMARCO_QUERY_INDEX);
         }
         catch (Exception ex) {
             ex.printStackTrace();

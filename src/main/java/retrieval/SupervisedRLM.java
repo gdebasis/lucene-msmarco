@@ -269,7 +269,7 @@ public class SupervisedRLM extends OneStepRetriever {
         return new TopDocs(new TotalHits(rerankedScoreDocs.length, TotalHits.Relation.EQUAL_TO), rerankedScoreDocs);
     }
 
-    public void retrieve() throws Exception {
+    public Map<String, TopDocs> retrieve() throws Exception {
         Map<String, String> testQueries = loadQueries(Constants.QUERY_FILE_TEST);
         testQueries
             .entrySet()
@@ -292,7 +292,7 @@ public class SupervisedRLM extends OneStepRetriever {
 
             Query luceneQuery = Constants.QRYEXPANSION? makeQueryWithExpansionTerms(qid, queryText) : makeQuery(queryText);
 
-            System.out.println(String.format("Retrieving for query %s: %s", qid, luceneQuery));
+            //System.out.println(String.format("Retrieving for query %s: %s", qid, luceneQuery));
             topDocs = searcher.search(luceneQuery, Constants.NUM_WANTED); // descending BM25
             topDocsMap.put(qid, topDocs);
         }
@@ -300,6 +300,7 @@ public class SupervisedRLM extends OneStepRetriever {
         processQueries(testQueries, topDocsMap, Constants.RES_FILE, false);
         if (Constants.RERANK)
             processQueries(testQueries, topDocsMap, Constants.RES_FILE_RERANKED, true);
+        return topDocsMap;
     }
 
     void processQueries(Map<String, String> testQueries, Map<String, TopDocs> topDocsMap, String resFile, boolean rerank) throws Exception {

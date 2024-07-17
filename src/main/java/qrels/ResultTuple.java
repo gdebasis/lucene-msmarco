@@ -13,8 +13,12 @@ public class ResultTuple implements Comparable<ResultTuple> {
     }
 
     @Override
-    public int compareTo(ResultTuple t) {
+    /*public int compareTo(ResultTuple t) {
         return rank < t.rank? -1 : rank == t.rank? 0 : 1;
+    }*/
+
+    public int compareTo(ResultTuple that) {
+        return Double.compare(that.score, this.score); // descending
     }
 
     public double getScore() {

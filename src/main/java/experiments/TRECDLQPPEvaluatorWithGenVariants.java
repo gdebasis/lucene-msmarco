@@ -14,6 +14,7 @@ import retrieval.Constants;
 import retrieval.KNNRelModel;
 import retrieval.MsMarcoQuery;
 import retrieval.OneStepRetriever;
+import utils.IndexUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -55,8 +56,7 @@ public class TRECDLQPPEvaluatorWithGenVariants {
             TopDocs topDocs = topDocsMap.get(query.getId());
 
             evaluatedMetricValues[i] = evaluator.compute(query.getId(), targetMetric);
-            qppEstimates[i] = (float) qppMethod.computeSpecificity(
-                    query, rr, topDocs, Constants.QPP_NUM_TOPK);
+            qppEstimates[i] = (float) qppMethod.computeSpecificity(query, topDocs, Constants.QPP_NUM_TOPK);
 
             //System.out.println(String.format("%s: AP = %.4f, QPP = %.4f", query.getId(), evaluatedMetricValues[i], qppEstimates[i]));
             i++;
@@ -232,7 +232,7 @@ public class TRECDLQPPEvaluatorWithGenVariants {
 
         try {
             OneStepRetriever retriever = new OneStepRetriever(Constants.QUERY_FILE_TEST);
-            Settings.init(retriever.getSearcher());
+            IndexUtils.init(retriever.getSearcher());
 
             /*
             for (int i=0; i<=1; i++) {

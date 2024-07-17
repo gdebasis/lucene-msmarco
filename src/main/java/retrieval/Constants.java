@@ -3,6 +3,8 @@ package retrieval;
 public interface Constants {
     String ID_FIELD = "id";
     String CONTENT_FIELD = "words";
+    String TREC_FAIR_IR_COLL = "/Users/debasis/research/fair_ir/coll.jsonl";
+    String TREC_FAIR_IR_INDEX = "/Users/debasis/research/fair_ir/index";
     String MSMARCO_COLL = "data/collection.tsv";
     String MSMARCO_INDEX = "index/";
     String MSMARCO_QUERY_INDEX = "query_index/";
@@ -17,7 +19,7 @@ public interface Constants {
     String RES_FILE = "ColBERT-PRF-VirtualAppendix/BM25/BM25.2019.res";
     String RES_FILE_RERANKED = "res_rlm.txt";
     String SAVED_MODEL = "model.tsv";
-    int NUM_WANTED = 50;
+    int NUM_WANTED = 100;
     float LAMBDA = 0.9f;
     float LAMBDA_ODDS = Constants.LAMBDA/(1-Constants.LAMBDA);
     int NUM_TOP_TERMS = 5;
@@ -54,4 +56,14 @@ public interface Constants {
     String QPP_JM_VARIANTS_FILE_RLM = "variants/trecdl_qv_rlm.csv";
     boolean NORMALISE_SCORES = true;
     boolean QUERYSIM_USE_RBO = true;
+
+    double MSMARCO_PASSAGE_AVG_LEN = 57.25;
+
+    String QRELS_DL1920 = "data/trecdl/trecdl1920.qrels";
+    String QUERIES_DL1920 = "data/trecdl/trecdl1920.queries";
+    //String QUERIES_DL1920 = "data/trecdl/pass_2019.queries.small"; // for unit test
+    String BM25_Top100_DL1920 = "stochastic-qpp/trecdl1920.bm25.res";
+    String ColBERT_Top100_DL1920 = "stochastic-qpp/trecdl1920.colbert-e2e.res";
+    boolean AUTO_SORT_TOP_DOCS = true;
+    boolean ALLOW_UNSORTED_TOPDOCS = true;
 }

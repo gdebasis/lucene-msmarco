@@ -4,11 +4,11 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TotalHits;
 import correlation.OverlapStats;
-import experiments.Settings;
+import utils.IndexUtils;
 import fdbk.RelevanceModelConditional;
 import fdbk.RelevanceModelIId;
+import retrieval.Constants;
 import retrieval.MsMarcoQuery;
-import qrels.*;
 
 import java.io.IOException;
 import java.util.*;
@@ -19,14 +19,14 @@ import java.util.logging.Logger;
 public class UEFSpecificity implements QPPMethod {
     BaseIDFSpecificity qppMethod;
 
-    static Random rnd = new Random(Settings.SEED);
+    static Random rnd = new Random(IndexUtils.SEED);
     static final int NUM_SAMPLES = 10;
 
     public UEFSpecificity(BaseIDFSpecificity qppMethod) {
         this.qppMethod = qppMethod;
     }
 
-    TopDocs sampleTopDocs(TopDocs topDocs, int M, int k) {
+    TopDocs sampleTopDocs(TopDocs topDocs, int k) {
 //        ScoreDoc[] sampledScoreDocs = new ScoreDoc[k];
         ScoreDoc[] sampledScoreDocs = new ScoreDoc[Math.min(topDocs.scoreDocs.length, k)];
         List<ScoreDoc> sdList = new ArrayList(Arrays.asList(topDocs.scoreDocs));
@@ -41,16 +41,16 @@ public class UEFSpecificity implements QPPMethod {
     }
 
     @Override
-    public double computeSpecificity(MsMarcoQuery q, RetrievedResults retInfo, TopDocs topDocs, int k) {
+    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs, int k) {
         TopDocs topDocs_rr = null;
         double avgRankDist = 0;
         RelevanceModelIId rlm = null;
 
         for (int i=0; i < NUM_SAMPLES; i++) {
-            TopDocs sampledTopDocs = sampleTopDocs(topDocs, 3 * k, k);
+            TopDocs sampledTopDocs = sampleTopDocs(topDocs, Math.min(Constants.RLM_NUM_TOP_DOCS, topDocs.scoreDocs.length));
             try {
                 rlm = new RelevanceModelConditional(
-                    qppMethod.searcher, q, sampledTopDocs, k);
+                        qppMethod.searcher, q, sampledTopDocs, sampledTopDocs.scoreDocs.length);
                 rlm.computeFdbkWeights();
             }
             catch (NullPointerException nex) { continue; /* next sample */ }
@@ -62,9 +62,7 @@ public class UEFSpecificity implements QPPMethod {
             double rankDist = OverlapStats.computeRankDist(topDocs, topDocs_rr);
             avgRankDist += rankDist;
         }
-
-        double rankSim = OverlapStats.computeRankDist(topDocs, topDocs_rr);
-        return ((double)NUM_SAMPLES/avgRankDist) * qppMethod.computeSpecificity(q, retInfo, topDocs, k);
+        return ((double)NUM_SAMPLES/avgRankDist) * qppMethod.computeSpecificity(q, topDocs, k);
     }
 
     @Override

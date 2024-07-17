@@ -13,9 +13,11 @@ import java.util.HashSet;
 import java.util.Set;
 import qrels.RetrievedResults;
 
-public class BaseIDFSpecificity implements QPPMethod {
+public abstract class BaseIDFSpecificity implements QPPMethod {
     IndexReader reader;
     IndexSearcher searcher;
+
+    public BaseIDFSpecificity() { }
 
     public BaseIDFSpecificity(IndexSearcher searcher) {
         this.searcher = searcher;
@@ -23,7 +25,7 @@ public class BaseIDFSpecificity implements QPPMethod {
     }
 
     @Override
-    public double computeSpecificity(MsMarcoQuery q, RetrievedResults retInfo, TopDocs topDocs, int k) {
+    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs, int k) {
         double specificity = 0;
         try {
             specificity = maxIDF(q.getQuery());

@@ -1,24 +1,19 @@
 package qpp;
 
 import correlation.OverlapStats;
-import experiments.Settings;
-import fdbk.RelevanceModelConditional;
-import fdbk.RelevanceModelIId;
+import utils.IndexUtils;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TotalHits;
 import retrieval.Constants;
 import retrieval.MsMarcoQuery;
 
-import java.io.IOException;
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class RSDSpecificity implements QPPMethod {
     BaseIDFSpecificity qppMethod;
 
-    static Random rnd = new Random(Settings.SEED);
+    static Random rnd = new Random(IndexUtils.SEED);
     static final int NUM_SAMPLES = 10;
 
     public RSDSpecificity(BaseIDFSpecificity qppMethod) {

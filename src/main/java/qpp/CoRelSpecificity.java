@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class CoRelSpecificity extends VariantSpecificity {
+
     public CoRelSpecificity(QPPMethod baseModel,
                             IndexSearcher searcher, KNNRelModel knnRelModel,
                             int numVariants,
@@ -25,20 +26,20 @@ public class CoRelSpecificity extends VariantSpecificity {
     }
 
     @Override
-    public double computeSpecificity(MsMarcoQuery q, RetrievedResults retInfo, TopDocs topDocs, int k) {
+    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs, int k) {
         List<MsMarcoQuery> knnQueries = null;
         double variantSpec = 0, colRelSpec = 0;
         double qppScore = 0;
 
         try {
-            qppScore = (1-lambda)*baseModel.computeSpecificity(q, retInfo, topDocs, k);
+            qppScore = lambda * super.computeSpecificity(q, topDocs, k);
             if (numVariants > 0)
                 knnQueries = knnRelModel.getKNNs(q, numVariants);
 
             if (knnQueries != null) {
                 int numRelatedQueries = knnQueries.size();
                 colRelSpec = coRelsSpecificity(knnQueries.subList(0, Math.min(numVariants, numRelatedQueries)), k);
-                qppScore += lambda*colRelSpec;
+                qppScore += (1-lambda)*colRelSpec;
             }
         }
         catch (Exception ex) { ex.printStackTrace(); }
@@ -95,17 +96,12 @@ public class CoRelSpecificity extends VariantSpecificity {
             String docText = reader.document(knnRelModel.getDocOffset(docName)).get(Constants.CONTENT_FIELD);
             MsMarcoQuery docQuery = new MsMarcoQuery(docName, docText);
 
-            TopDocs topQueries = knnRelModel.getQueryIndexSearcher().search(docQuery.getQuery(), 5);
-            System.out.println("Rel doc: " + docText);
-            for (ScoreDoc sd: topQueries.scoreDocs) {
-                System.out.println("Retrieved query: " + knnRelModel.getQueryIndexSearcher().getIndexReader().document(sd.doc).get(Constants.CONTENT_FIELD) + ", score: " + sd.score);
-            }
+            TopDocs topQueries = knnRelModel.getQueryIndexSearcher().search(docQuery.getQuery(), 20);
 
-            RetrievedResults topQueriesRetrievedResults = new RetrievedResults(rq.getId(), topQueries);
             if (norlamiseScores)
-                topQueriesRetrievedResults = normaliseScores(topQueriesRetrievedResults);
+                topQueries = normaliseScores(topQueries);
 
-            corelEstimate = baseModel.computeSpecificity(rq, topQueriesRetrievedResults, null, k);
+            corelEstimate = baseModel.computeSpecificity(rq, null, k);
             refSim = rq.getRefSim();
 
             corelScore += refSim * corelEstimate;

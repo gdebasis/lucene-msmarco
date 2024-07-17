@@ -440,7 +440,7 @@ public class KNNRelModel extends SupervisedRLM {
         bw.close();
     }
 
-    public void retrieve() throws Exception {
+    public Map<String, TopDocs> retrieve() throws Exception {
         Map<String, String> testQueries = loadQueries(Constants.QUERY_FILE_TEST);
         testQueries
                 .entrySet()
@@ -501,6 +501,7 @@ public class KNNRelModel extends SupervisedRLM {
                 }
             }
         }
+        return topDocsMap;
     }
 
     static void mergeInto(Map<String, Double> a, Map<String, Double> b) { // merge a into b
@@ -621,13 +622,15 @@ public class KNNRelModel extends SupervisedRLM {
     public static void main(String[] args) {
         try {
             System.out.println("Loading queries");
-            KNNRelModel knnRelModel = new KNNRelModel(Constants.QRELS_TRAIN, "data/trecdl/trecdl1920.txt");
+            KNNRelModel knnRelModel = new KNNRelModel(Constants.QRELS_TRAIN, Constants.QUERY_FILE_TEST);
             //knnRelModel.retrieve();
 
             if (args.length<2) {
-                System.out.println("usage: retrieval.KNNRelModel <TREC DL evaluation query file (2019/2020)> <json file>");
+                System.out.println("usage: retrieval.KNNRelModel <TREC DL evaluation query file (2019/2020)> <out json file>");
                 args = new String[2];
-                args[0] = "data/trecdl/trecdl1920.txt";
+                args[0] = "beir/scifact.queries";
+                //args[0] = "beir/covid.queries";
+                //args[0] = "data/trecdl/trecdl1920.txt";
                 args[1] = Constants.FEWSHOT_JSON;
             }
 

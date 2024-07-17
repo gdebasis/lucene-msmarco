@@ -1,8 +1,6 @@
 package experiments;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.math3.stat.StatUtils;
-import org.apache.commons.math3.stat.regression.SimpleRegression;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
@@ -10,18 +8,12 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
-import org.apache.lucene.search.similarities.BM25Similarity;
-import org.apache.lucene.search.similarities.LMDirichletSimilarity;
-import org.apache.lucene.search.similarities.LMJelinekMercerSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
-import correlation.KendalCorrelation;
-import correlation.MinMaxNormalizer;
-import correlation.PearsonCorrelation;
 import correlation.QPPCorrelationMetric;
 import qrels.*;
-import qpp.*;
 import retrieval.Constants;
 import retrieval.MsMarcoQuery;
+import utils.IndexUtils;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -95,7 +87,7 @@ public class QPPEvaluator {
 
     public Query makeQuery(String queryText) {
         BooleanQuery.Builder qb = new BooleanQuery.Builder();
-        String[] tokens = Settings.analyze(englishAnalyzerWithSmartStopwords(), queryText).split("\\s+");
+        String[] tokens = IndexUtils.analyze(englishAnalyzerWithSmartStopwords(), queryText).split("\\s+");
         for (String token: tokens) {
             TermQuery tq = new TermQuery(new Term(Constants.CONTENT_FIELD, token));
             qb.add(new BooleanClause(tq, BooleanClause.Occur.SHOULD));

@@ -1,6 +1,7 @@
 package qpp;
 
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import qrels.ResultTuple;
 import qrels.RetrievedResults;
@@ -9,6 +10,7 @@ import retrieval.KNNRelModel;
 import retrieval.MsMarcoQuery;
 import retrieval.TermDistribution;
 
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -40,72 +42,64 @@ public class VariantSpecificity extends NQCSpecificity {
         this.norlamiseScores = normaliseScores;
     }
 
-    RetrievedResults normaliseScores(RetrievedResults retInfo) {
-        double minScore = retInfo.getTuples()
-                .stream().map(x->x.getScore()).reduce(Double::min).get();
-        double maxScore = retInfo.getTuples()
-                .stream().map(x->x.getScore()).reduce(Double::max).get();
-        double diff = maxScore - minScore;
+    TopDocs normaliseScores(TopDocs topDocs) {
+        if (!norlamiseScores)
+            return topDocs;
 
-        if (norlamiseScores) {
-            retInfo.getTuples()
-                    .forEach(
-                            x -> x.setScore((x.getScore()-minScore)/diff)
-                    );
-        }
-        return retInfo;
+        float minScore = Arrays.stream(topDocs.scoreDocs).map(x->x.score).reduce(Float::min).get();
+        float maxScore = Arrays.stream(topDocs.scoreDocs).map(x->x.score).reduce(Float::max).get();
+        float diff = maxScore - minScore;
+
+        ScoreDoc[] normalisedSDs = new ScoreDoc[topDocs.scoreDocs.length];
+        System.arraycopy(topDocs.scoreDocs, 0, normalisedSDs, 0, topDocs.scoreDocs.length);
+
+        for (ScoreDoc sd: normalisedSDs)
+            sd.score = (sd.score - minScore)/diff;
+
+        return new TopDocs(topDocs.totalHits, normalisedSDs);
     }
 
     @Override
-    public double computeSpecificity(MsMarcoQuery q, RetrievedResults retInfo, TopDocs topDocs, int k) {
+    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs, int k) {
         List<MsMarcoQuery> knnQueries = null;
         double variantSpec = 0;
 
         if (norlamiseScores)
-            retInfo = normaliseScores(retInfo);
+            topDocs = normaliseScores(topDocs);
 
         try {
             if (numVariants > 0)
                 knnQueries = knnRelModel.getKNNs(q, numVariants);
 
             if (knnQueries!=null && !knnQueries.isEmpty()) {
-                variantSpec = variantSpecificity(q, knnQueries, retInfo, topDocs, k);
+                variantSpec = variantSpecificity(q, knnQueries, topDocs, k);
             }
         }
         catch (Exception ex) { ex.printStackTrace(); }
 
         return knnQueries!=null?
-                lambda * variantSpec + (1-lambda) * baseModel.computeSpecificity(q, retInfo, topDocs, k):
-                baseModel.computeSpecificity(q, retInfo, topDocs, k);
+                lambda * variantSpec + (1-lambda) * baseModel.computeSpecificity(q, topDocs, k):
+                baseModel.computeSpecificity(q, topDocs, k);
     }
 
-    double variantSpecificity(MsMarcoQuery q, List<MsMarcoQuery> knnQueries,
-                              RetrievedResults retInfo, TopDocs topDocs, int k) throws Exception {
+    double variantSpecificity(MsMarcoQuery q, List<MsMarcoQuery> knnQueries, TopDocs topDocs, int k) throws Exception {
         double specScore = 0;
         double z = 0;
         double variantSpecScore;
         double refSim;
 
-        //System.out.println("orig scores:");
-        //retInfo.getTuples().stream().limit(5).forEach(System.out::println);
-
         // apply QPP base model on these estimated relevance scores
         for (MsMarcoQuery rq: knnQueries) {
-            //System.out.println(rq.toString());
 
             TopDocs topDocsRQ = searcher.search(rq.getQuery(), k);
-            RetrievedResults varInfo = new RetrievedResults(rq.getId(), topDocsRQ);
-
-            //System.out.println("var scores:");
-            //varInfo.getTuples().stream().limit(5).forEach(System.out::println);
 
             if (norlamiseScores)
-                varInfo = normaliseScores(varInfo);
+                topDocsRQ = normaliseScores(topDocsRQ);
 
             //System.out.println("var scores after norm:");
             //varInfo.getTuples().stream().limit(5).forEach(System.out::println);
 
-            variantSpecScore = baseModel.computeSpecificity(rq, varInfo, topDocs, k);
+            variantSpecScore = baseModel.computeSpecificity(rq, topDocsRQ, k);
             refSim = rq.getRefSim();
 
             //System.out.println(String.format("%s %.4f", rq.getId(), variantSpecScore));
@@ -113,7 +107,7 @@ public class VariantSpecificity extends NQCSpecificity {
             z += refSim;
         }
 
-        return z==0? baseModel.computeSpecificity(q, retInfo, topDocs, k): specScore/z;
+        return z==0? baseModel.computeSpecificity(q, topDocs, k): specScore/z;
     }
 
 }

@@ -3,6 +3,7 @@ package qrels;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
+import org.apache.xmlbeans.impl.xb.xsdschema.All;
 import retrieval.Constants;
 import retrieval.KNNRelModel;
 import retrieval.MsMarcoQuery;
@@ -14,9 +15,19 @@ public class Evaluator {
     AllRelRcds relRcds;
     AllRetrievedResults retRcds;
 
+    public Evaluator(String resFile) {
+        retRcds = new AllRetrievedResults(resFile);
+    }
+
     public Evaluator(String qrelsFile, String resFile) throws Exception {
         relRcds = new AllRelRcds(qrelsFile);
         retRcds = new AllRetrievedResults(resFile);
+        fillRelInfo();
+    }
+
+    public Evaluator(String qrelsFile, Map<String, TopDocs> topDocsMap) {
+        relRcds = new AllRelRcds(qrelsFile);
+        retRcds = new AllRetrievedResults(topDocsMap);
         fillRelInfo();
     }
 
@@ -46,6 +57,8 @@ public class Evaluator {
     }
 
     public AllRetrievedResults getAllRetrievedResults() { return retRcds; }
+
+    public AllRelRcds getRelRcds() { return relRcds; }
 
     public RetrievedResults getRetrievedResultsForQueryId(String qid) {
         return retRcds.getRetrievedResultsForQueryId(qid);

@@ -1,6 +1,6 @@
 package qrels;
-import experiments.Settings;
-import org.apache.lucene.index.Term;
+import utils.IndexUtils;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.*;
 import retrieval.Constants;
 
@@ -12,15 +12,15 @@ public class AllRetrievedResults {
     String resFile;
     AllRelRcds allRelInfo;
 
-    public AllRetrievedResults(String resFile) {
+    public AllRetrievedResults(String resFile, int numWanted, boolean skipHeader) {
         String line;
         this.resFile = resFile;
 
         allRetMap = new TreeMap<>();
-        try (FileReader fr = new FileReader(resFile);
-             BufferedReader br = new BufferedReader(fr); ) {
+        try (FileReader fr = new FileReader(resFile); BufferedReader br = new BufferedReader(fr); ) {
+            if (skipHeader) br.readLine();
             while ((line = br.readLine()) != null) {
-                storeRetRcd(line);
+                storeRetRcd(line, numWanted);
             }
         }
         catch (Exception ex) { ex.printStackTrace(); }
@@ -28,7 +28,26 @@ public class AllRetrievedResults {
         sortResults();
     }
 
+    public AllRetrievedResults(String resFile, int numWanted) {
+        this(resFile, numWanted, false);
+    }
+
+    public AllRetrievedResults(String resFile) {
+        this(resFile, 0);
+    }
+
+    public void induceScores(IndexReader reader) throws Exception {
+        for (Map.Entry<String, RetrievedResults> e: allRetMap.entrySet()) {
+            System.out.println("Inducing scores for query " + e.getKey());
+            RetrievedResults retRes = e.getValue();
+            retRes.induceScores(reader);
+        }
+    }
+
     private void sortResults() {
+        if (!Constants.AUTO_SORT_TOP_DOCS)
+            return;
+
         // This ensures that the res file may not have to be sorted; we sort by the scores
         allRetMap.values().forEach(x->x.sortResultTuples());
         for (RetrievedResults rr: allRetMap.values()) {
@@ -41,14 +60,18 @@ public class AllRetrievedResults {
 
     public Set<String> queries() { return this.allRetMap.keySet(); }
 
-    public AllRetrievedResults(String qid, TopDocs topDocs) {
+    public AllRetrievedResults(Map<String, TopDocs> topDocsMap) {
         allRetMap = new TreeMap<>();
-        RetrievedResults rr = new RetrievedResults(qid);
-        int rank = 1;
-        for (ScoreDoc sd: topDocs.scoreDocs) {
-            rr.addTuple(Settings.getDocIdFromOffset(sd.doc), rank++, sd.score);
+        for (Map.Entry<String, TopDocs> e: topDocsMap.entrySet()) {
+            String qid = e.getKey();
+            TopDocs topDocs = e.getValue();
+            RetrievedResults rr = new RetrievedResults(qid);
+            int rank = 1;
+            for (ScoreDoc sd : topDocs.scoreDocs) {
+                rr.addTuple(IndexUtils.getDocIdFromOffset(sd.doc), rank++, sd.score);
+            }
+            allRetMap.put(qid, rr);
         }
-        allRetMap.put(qid, rr);
         sortResults();
     }
 
@@ -56,18 +79,35 @@ public class AllRetrievedResults {
         return allRetMap.get(qid);
     }
 
-    void storeRetRcd(String line) {
+    String storeRetRcd(String line, int numWanted) {
         String[] tokens = line.split("\\s+");
+
+        /* Here we check for two different file types (the third one we leave for a subclass):
+        1. RES file --- TREC style 6 column file
+        2. Minimalist two column file --- 1st column  QID, 2nd column Doc Name (Rank is the presented order)
+        3. Minimalist res file for stochastic ranking ---
+        1st column  QID, 2nd column rank number, 3rd column Doc Name (Rank is the presented order)
+        */
+
         String qid = tokens[0];
         RetrievedResults res = allRetMap.get(qid);
         if (res == null) {
             res = new RetrievedResults(qid);
             allRetMap.put(qid, res);
         }
-        if (res.rtuples.size() < Constants.NUM_WANTED)
-            res.addTuple(tokens[2],
+
+        if (res.rtuples.size() < numWanted) {
+            if (tokens.length >= 6) {
+                res.addTuple(tokens[2],
                     Integer.parseInt(tokens[3]), // dummy; we later on assign ranks based on the sorted positions
-                    Double.parseDouble(tokens[4]));
+                    Double.parseDouble(tokens[4])
+                );
+            }
+            else {
+                res.addTuple(tokens[1]);
+            }
+        }
+        return qid;
     }
 
     public String toString() {
@@ -95,7 +135,7 @@ public class AllRetrievedResults {
             int numret = rr.rtuples.size();
             List<ScoreDoc> scoreDocs = new ArrayList<>();
             for (ResultTuple tuple: rr.rtuples) {
-                int docOffset = Settings.getDocOffsetFromId(tuple.docName);
+                int docOffset = IndexUtils.getDocOffsetFromId(tuple.docName);
                 if (docOffset>0)
                     scoreDocs.add(new ScoreDoc(docOffset, (float)tuple.score));
             }

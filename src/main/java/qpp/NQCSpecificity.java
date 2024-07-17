@@ -10,16 +10,21 @@ import java.io.IOException;
 import java.util.Arrays;
 
 public class NQCSpecificity extends BaseIDFSpecificity {
+
+    public NQCSpecificity() { }
+
     public NQCSpecificity(IndexSearcher searcher) {
         super(searcher);
     }
 
     @Override
-    public double computeSpecificity(MsMarcoQuery q, RetrievedResults retInfo, TopDocs topDocs, int k) {
-        return computeNQC(q.getQuery(), retInfo, k);
+    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs, int k) {
+        return computeNQC(q, topDocs, k);
     }
 
     private double computeNQC(Query q, double[] rsvs, int k) {
+        rsvs = Arrays.stream(rsvs).limit(k).toArray();
+
         //double ref = new StandardDeviation().evaluate(rsvs);
         double ref = Arrays.stream(rsvs).average().getAsDouble();
         double avgIDF = 0;
@@ -32,10 +37,9 @@ public class NQCSpecificity extends BaseIDFSpecificity {
         nqc /= (double)rsvs.length;
 
         try {
-            // dekhar jonyo je ei duto baaler modhye konta better baal!
-            //avgIDF = Arrays.stream(idfs(q)).average().getAsDouble();
-            avgIDF = Arrays.stream(idfs(q)).max().getAsDouble();
-        } catch (IOException e) {
+            avgIDF = reader!=null? Arrays.stream(idfs(q)).average().getAsDouble() : 1.0;
+        }
+        catch (IOException e) {
             e.printStackTrace();
         }
         return nqc * avgIDF; // high variance, high avgIDF -- more specificity
@@ -45,15 +49,16 @@ public class NQCSpecificity extends BaseIDFSpecificity {
         return computeNQC(q, topDocs.getRSVs(k), k);
     }
 
-    double[] getRSVs(TopDocs topDocs) {
+    double[] getRSVs(TopDocs topDocs, int k) {
         return Arrays.stream(topDocs.scoreDocs)
+                .limit(k) // only on top-k
                 .map(scoreDoc -> scoreDoc.score)
                 .mapToDouble(d -> d)
                 .toArray();
     }
 
-    public double computeNQC(Query q, TopDocs topDocs, int k) {
-        return computeNQC(q, getRSVs(topDocs), k);
+    public double computeNQC(MsMarcoQuery q, TopDocs topDocs, int k) {
+        return computeNQC(q.getQuery(), getRSVs(topDocs, k), k);
     }
 
     @Override

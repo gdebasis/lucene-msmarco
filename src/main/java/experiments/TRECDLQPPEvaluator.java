@@ -1,24 +1,19 @@
 package experiments;
 
 import correlation.SARE;
-import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.similarities.LMDirichletSimilarity;
-import org.apache.lucene.search.similarities.Similarity;
 import correlation.KendalCorrelation;
 import qrels.Evaluator;
 import qrels.Metric;
-import qrels.*;
 import qpp.*;
 
 import retrieval.Constants;
 import retrieval.KNNRelModel;
 import retrieval.MsMarcoQuery;
 import retrieval.OneStepRetriever;
+import utils.IndexUtils;
 
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -72,12 +67,10 @@ public class TRECDLQPPEvaluator {
 
         int i = 0;
         for (MsMarcoQuery query : queries) {
-            RetrievedResults rr = evaluator.getRetrievedResultsForQueryId(query.getId());
             TopDocs topDocs = topDocsMap.get(query.getId());
 
             evaluatedMetricValues[i] = evaluator.compute(query.getId(), targetMetric);
-            qppEstimates[i] = (float) qppMethod.computeSpecificity(
-                    query, rr, topDocs, Constants.QPP_NUM_TOPK);
+            qppEstimates[i] = (float) qppMethod.computeSpecificity(query, topDocs, Constants.QPP_NUM_TOPK);
 
             //System.out.println(String.format("%s: AP = %.4f, QPP = %.4f", query.getId(), evaluatedMetricValues[i], qppEstimates[i]));
             i++;
@@ -121,7 +114,7 @@ public class TRECDLQPPEvaluator {
             for (float l = 0; l <= 1; l += Constants.QPP_COREL_LAMBDA_STEPS) {
                 TauAndSARE tauAndSARE = runExperiment(baseModelName,
                         searcher, knnRelModel, evaluatorTrain,
-                        trainQueries, topDocsMap, l, numVariants, targetMetric);
+                        trainQueries, topDocsMap, l/2, numVariants, targetMetric);
 
                 System.out.println(String.format("Train on %s -- (%.1f, %d): tau = %.4f",
                         trainQueryFile, l, numVariants, tauAndSARE.tau, tauAndSARE.sare));
@@ -145,7 +138,7 @@ public class TRECDLQPPEvaluator {
         Map<String, TopDocs> topDocsMapTest = evaluatorTest.getAllRetrievedResults().castToTopDocs();
         TauAndSARE tauAndSARE_Test = runExperiment(baseModelName,
                 searcher, knnRelModelTest,
-                evaluatorTest, testQueries, topDocsMapTest, p.l, p.numVariants, targetMetric);
+                evaluatorTest, testQueries, topDocsMapTest, p.l/2, p.numVariants, targetMetric);
 
         System.out.println(String.format(
                 "Kendal's on %s with lambda=%.1f, M=%d: %.4f %.4f",
@@ -273,9 +266,9 @@ public class TRECDLQPPEvaluator {
 
         try {
             OneStepRetriever retriever = new OneStepRetriever(Constants.QUERY_FILE_TEST);
-            Settings.init(retriever.getSearcher());
+            IndexUtils.init(retriever.getSearcher());
 
-            runSingleExperiment(args[3], retriever, QUERY_FILES[0], QRELS_FILES[0], args[0], targetMetric, 5, 0.7f, false);
+            runSingleExperiment(args[3], retriever, QUERY_FILES[0], QRELS_FILES[0], args[0], targetMetric, 5, 1.0f, false);
 
             System.exit(0);
 

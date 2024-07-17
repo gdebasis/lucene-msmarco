@@ -84,7 +84,11 @@ public class IndexTester {
     }
 
     public static void main(String[] args) throws Exception {
-        IndexReader reader = DirectoryReader.open(FSDirectory.open(new File(Constants.MSMARCO_INDEX).toPath()));
+        if (args.length < 1) {
+            args = new String[1];
+            args[0] = Constants.MSMARCO_INDEX;
+        }
+        IndexReader reader = DirectoryReader.open(FSDirectory.open(new File(args[0]).toPath()));
         System.out.println(reader.numDocs());
 
         /*

@@ -23,7 +23,7 @@ public class AvgIDFSpecificity implements QPPMethod {
     }
 
     @Override
-    public double computeSpecificity(MsMarcoQuery q, RetrievedResults retInfo, TopDocs topDocs, int k) {
+    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs, int k) {
         double specificity = 0;
         try {
             specificity = averageIDF(q.getQuery());

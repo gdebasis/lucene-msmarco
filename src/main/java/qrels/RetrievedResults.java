@@ -1,10 +1,16 @@
 package qrels;
 
-import experiments.Settings;
+import utils.IndexUtils;
+import fdbk.PerDocTermVector;
+import fdbk.RetrievedDocTermInfo;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
+import retrieval.TermWtUtil;
 import retrieval.Constants;
+import retrieval.OneStepRetriever;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -37,10 +43,44 @@ public class RetrievedResults implements Comparable<RetrievedResults> {
         this.rtuples = new ArrayList<>(100);
         int rank = 1;
         for (ScoreDoc sd: topDocs.scoreDocs) {
-            addTuple(Settings.getDocIdFromOffset(sd.doc), rank++, sd.score);
+            addTuple(IndexUtils.getDocIdFromOffset(sd.doc), rank++, sd.score);
         }
         avgP = -1;
         numRelRet = -1;
+    }
+
+    float bm25Weight(IndexReader reader, int docId) throws Exception {
+        int N = reader.numDocs();
+        PerDocTermVector docvec = OneStepRetriever.buildStatsForSingleDoc(reader, docId);
+        float docLen = (float)(docvec.getPerDocStats().values().stream().map(x -> x.getTf()).mapToInt(i -> i.intValue()).sum());
+        float bm25_wt = 0;
+
+        for (RetrievedDocTermInfo tinfo : docvec.getPerDocStats().values()) {
+            int n = reader.docFreq(new Term(Constants.CONTENT_FIELD, tinfo.getTerm()));
+            //bm25_wt += TermWtUtil.tfIdfWeight(tinfo.getTf(), N, n);
+            bm25_wt += TermWtUtil.bm25Weight(1.5f, 0.75f, tinfo.getTf(), N, n, docLen);
+        }
+        return bm25_wt;
+    }
+
+    public void induceScores(IndexReader reader) throws Exception {
+        for (ResultTuple rTuple: rtuples) {
+            String docName = rTuple.getDocName();
+            int docId = IndexUtils.getDocOffsetFromId(docName);
+            if (docId >= 0) {
+                System.out.print(String.format("Computing BM25 weights for %s\r", docName));
+                rTuple.score = bm25Weight(reader, docId);
+            }
+        }
+
+        sortResultTuples();
+
+        int rank = 1;
+        for (ResultTuple rtuple: rtuples) {
+            rtuple.rank = rank++;
+        }
+        System.out.println("Induced scores:");
+        System.out.println(this.toString());
     }
 
     public String getQid() { return qid; }
@@ -63,13 +103,17 @@ public class RetrievedResults implements Comparable<RetrievedResults> {
         rtuples.add(new ResultTuple(docName, rank, score));
     }
 
+    public void addTuple(String docName) {
+        rtuples.add(new ResultTuple(docName, 0, 0));
+    }
+
     public String toString() {
         StringBuffer buff = new StringBuffer();
         for (ResultTuple rt : rtuples) {
             buff.append(qid).append("\t").
                     append(rt.docName).append("\t").
                     append(rt.rank).append("\t").
-                    append(rt.rel).append("\n");
+                    append(String.format("%.4f", rt.score)).append("\n");
         }
         return buff.toString();
     }

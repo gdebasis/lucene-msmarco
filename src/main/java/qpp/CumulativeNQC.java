@@ -5,6 +5,8 @@ import org.apache.lucene.search.TopDocs;
 import retrieval.MsMarcoQuery;
 
 public class CumulativeNQC extends NQCSpecificity {
+    public CumulativeNQC() {}
+
     public CumulativeNQC(IndexSearcher searcher) {
         super(searcher);
     }

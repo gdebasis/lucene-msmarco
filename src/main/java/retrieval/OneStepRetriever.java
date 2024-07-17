@@ -6,6 +6,7 @@ import indexing.MsMarcoIndexer;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
+import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.LMDirichletSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.FSDirectory;
@@ -17,27 +18,41 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class OneStepRetriever {
     IndexReader reader;
     IndexSearcher searcher;
     Similarity sim;
+    String queryFile;
     Map<String, String> queries;
+    List<MsMarcoQuery> queryList;
+    String resFile;
+    String analyzerName;
 
-    public OneStepRetriever(String queryFile) throws Exception {
+    public OneStepRetriever(String queryFile, String resFile, String analyzerName) throws Exception {
+        this.analyzerName = analyzerName;
         reader = DirectoryReader.open(FSDirectory.open(new File(Constants.MSMARCO_INDEX).toPath()));
         searcher = new IndexSearcher(reader);
-        sim = new LMDirichletSimilarity(Constants.MU);
-        searcher.setSimilarity(sim);
+        this.queryFile = queryFile;
         queries = loadQueries(queryFile);
+        queryList = new ArrayList<>();
+        for (Map.Entry<String, String> e: queries.entrySet()) {
+            queryList.add(new MsMarcoQuery(e.getKey(), e.getValue()));
+        }
+        this.resFile = resFile;
     }
 
+    public OneStepRetriever(String queryFile) throws Exception {
+        this(queryFile, new File(queryFile).getName() + ".res", "english");
+    }
+
+    public OneStepRetriever(String queryFile, String resFile) throws Exception {
+        this(queryFile, resFile, "english");
+    }
+
+    public Map<String, String> getQueryMap() { return queries; }
     public IndexSearcher getSearcher() { return searcher; }
 
     public Map<String, String> loadQueries(String queryFile) throws Exception {
@@ -65,8 +80,16 @@ public class OneStepRetriever {
         return (Query)qb.build();
     }
 
-    public void retrieve() throws Exception {
-        Map<String, String> testQueries = loadQueries(Constants.QUERY_FILE_TEST);
+    public Map<String, TopDocs> retrieve() throws Exception {
+        return retrieve(1000);
+    }
+
+    public Map<String, TopDocs> retrieve(float mu) throws Exception {
+        sim = new LMDirichletSimilarity(mu);
+        searcher.setSimilarity(sim);
+
+        Map<String, TopDocs> results = new HashMap<>();
+        Map<String, String> testQueries = loadQueries(queryFile);
         testQueries
                 .entrySet()
                 .stream()
@@ -79,23 +102,30 @@ public class OneStepRetriever {
                 )
         ;
 
-        BufferedWriter bw = new BufferedWriter(new FileWriter("run.res"));
+        System.out.println("Saving results in " + resFile);
+
+        BufferedWriter bw = new BufferedWriter(new FileWriter(resFile));
         TopDocs topDocs;
         for (Map.Entry<String, String> e : testQueries.entrySet()) {
             String qid = e.getKey();
             String queryText = e.getValue();
 
-            Query luceneQuery = makeQuery(queryText);
+            MsMarcoQuery msMarcoQuery = new MsMarcoQuery(qid, queryText);
+            Query luceneQuery = msMarcoQuery.getQuery();
 
-            System.out.println(String.format("Retrieving for query %s: %s", qid, luceneQuery));
+            //System.out.println(String.format("Retrieving for query %s: %s", qid, luceneQuery));
             topDocs = searcher.search(luceneQuery, Constants.NUM_WANTED);
+            results.put(qid, topDocs);
 
             //saveTopDocs(qid, topDocs);
 
             saveTopDocsResFile(bw, qid, queryText, topDocs);
         }
         bw.close();
+        return results;
     }
+
+    public List<MsMarcoQuery> getQueryList() { return queryList; }
 
     static public PerDocTermVector buildStatsForSingleDoc(IndexReader reader, int docId) throws IOException {
         String termText;
@@ -189,8 +219,16 @@ public class OneStepRetriever {
     }
 
     public static void main(String[] args) throws Exception {
-        OneStepRetriever oneStepRetriever = new OneStepRetriever(Constants.QUERY_FILE_TEST);
-        oneStepRetriever.retrieve();
+        if (args.length < 3) {
+            args = new String[3];
+            args[0] = Constants.QUERY_FILE_TEST;
+            args[1] = "1000";
+            args[2] = "english";
+            System.out.println("<query file> <mu (LM-Dirichlet)> <english/whitespace> (no stopword removal or stemming for the latter)");
+        }
+        OneStepRetriever oneStepRetriever = new OneStepRetriever(args[0]);
+        oneStepRetriever.retrieve(Float.parseFloat(args[1]));
+
         oneStepRetriever.reader.close();
     }
 }
