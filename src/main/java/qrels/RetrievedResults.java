@@ -191,6 +191,16 @@ public class RetrievedResults implements Comparable<RetrievedResults> {
         return numRelSeen/(float)relInfo.relMap.size();
     }
 
+    float computeRR() {
+        float rr = 0;
+        for (ResultTuple tuple : this.rtuples) {
+            if (tuple.rel <= 0)
+                continue;
+            rr = 1/(float)tuple.rank;
+        }
+        return rr;
+    }
+
     float computeNdcg(int cutoff) {
         List<Integer> rels =
             relInfo.relMap.values()

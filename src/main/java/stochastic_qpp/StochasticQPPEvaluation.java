@@ -199,8 +199,11 @@ public class StochasticQPPEvaluation {
 
     public static void main(String[] args) throws Exception {
 
-        boolean[] modes = {true, false};
-        final Metric[] targetMetricNames = {Metric.AP, Metric.nDCG};
+        //final String resFile = Constants.BM25_Top100_DL1920;
+        final String resFile = Constants.ColBERT_Top100_DL1920;
+
+        boolean[] modes = {/*true,*/ false};
+        final Metric[] targetMetricNames = {/*Metric.AP, Metric.nDCG*/ Metric.RR};
 
         for (Metric m: targetMetricNames) {
             for (boolean relAwareSampling : modes) {
@@ -208,8 +211,7 @@ public class StochasticQPPEvaluation {
                         new StochasticQPPEvaluation(
                                 Constants.QUERIES_DL1920,
                                 Constants.QRELS_DL1920,
-                                //Constants.BM25_Top100_DL1920,
-                                Constants.ColBERT_Top100_DL1920,
+                                resFile,
                                 relAwareSampling, m);
 
                 QPPMethod[] qppMethods = {

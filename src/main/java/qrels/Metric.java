@@ -1,6 +1,7 @@
 package qrels;
 
 public enum Metric {
+    RR,
     AP,
     P_10,
     Recall,

@@ -50,7 +50,7 @@ public class AllRetrievedResults {
     }
 
     public AllRetrievedResults(String resFile) {
-        this(resFile, 0);
+        this(resFile, 1000);
     }
 
     public void induceScores(IndexReader reader,
@@ -202,6 +202,7 @@ public class AllRetrievedResults {
         double res = 0;
         RetrievedResults rr = allRetMap.get(qid);
         switch (m) {
+            case RR: res = rr.computeRR(); break;
             case AP: res = rr.computeAP(); break;
             case P_10: res = rr.precAtTop(10); break;
             case Recall: res = rr.computeRecall(); break;

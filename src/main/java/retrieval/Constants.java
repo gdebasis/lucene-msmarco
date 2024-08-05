@@ -7,7 +7,7 @@ public interface Constants {
     String TREC_FAIR_IR_EVALDIR = "fair_ir/evals";
     String TREC_FAIR_IR_COLL = "/Users/debasis/research/fair_ir/coll.jsonl";
     String TREC_FAIR_IR_INDEX = "/Users/debasis/research/fair_ir/index";
-    String TREC_FAIR_IR_QUERY_FILE = "/Users/debasis/research/fair_ir/queries/topics.tsv/";
+    String TREC_FAIR_IR_QUERY_FILE = "fair_ir/topics.tsv";
     String MSMARCO_COLL = "data/collection.tsv";
     String MSMARCO_INDEX = "index/";
     String MSMARCO_QUERY_INDEX = "query_index/";
