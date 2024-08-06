@@ -22,7 +22,8 @@ public class StochasticQPPEvaluation {
     String qrelsFile;
     double[] targetMetrics;
     Metric targetMetric;
-    boolean relevanceAwareSampling;
+    boolean uniformSampling;
+    String samplingModeName;
 
     //final static int[] CUTOFFS = {10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
     final static int[] CUTOFFS = {50};
@@ -30,10 +31,12 @@ public class StochasticQPPEvaluation {
 
     public StochasticQPPEvaluation(
             String queryFile, String qrelsFile,
-            String resFile, boolean relevanceAwareSampling,
+            String resFile, String samplingMode, /* U (uniform), M (metadata), R (rel-aware) */
             Metric targetMetric) throws Exception {
         this.qrelsFile = qrelsFile;
-        this.relevanceAwareSampling = relevanceAwareSampling;
+
+        this.uniformSampling = samplingMode.equals("U");
+        this.samplingModeName = uniformSampling? "random": samplingMode.equals("R")? "rel" : "av";
         this.targetMetric = targetMetric;
 
         retriever = new OneStepRetriever(queryFile, resFile);
@@ -46,7 +49,7 @@ public class StochasticQPPEvaluation {
 
         // Prepare rank transposition sampler for each query
         topDocsMapWithoutPerturbation = origRankedListEvaluator.getAllRetrievedResults().castToTopDocs();
-        if (relevanceAwareSampling)
+        if (!uniformSampling)
             rankingSampler = new HashMap<>();
 
         targetMetrics = new double[queries.size()];
@@ -55,9 +58,12 @@ public class StochasticQPPEvaluation {
         for (MsMarcoQuery query : queries) {
             TopDocs topDocs = topDocsMapWithoutPerturbation.get(query.getId());
 
-            if (relevanceAwareSampling) {
-                RankSwapper rankSwapper = new RankSwapper(query.getId(), origRankedListEvaluator, topDocs);
-                rankingSampler.put(query.getId(), rankSwapper);
+            if (!uniformSampling) {
+                RankSwapper lrankSwapper =
+                        samplingMode.equals("R")?
+                        new RankSwapper(query.getId(), origRankedListEvaluator, topDocs):
+                        new AttributeValueBasedSwapper(query.getId(), origRankedListEvaluator, topDocs, null);
+                rankingSampler.put(query.getId(), lrankSwapper);
             }
 
             //System.out.println("Original ranking: ");
@@ -102,9 +108,9 @@ public class StochasticQPPEvaluation {
 
         for (MsMarcoQuery query : queries) {
             String qid = query.getId();
-            TopDocs permutedSample = relevanceAwareSampling?
-                    rankingSampler.get(qid).sample() :
-                    RankSwapper.shuffle(this.topDocsMapWithoutPerturbation.get(qid));
+            TopDocs permutedSample = uniformSampling?
+                    RankSwapper.shuffle(this.topDocsMapWithoutPerturbation.get(qid)) :
+                    rankingSampler.get(qid).sample();
 
             topDocsMap.put(qid, permutedSample);
         }
@@ -134,7 +140,7 @@ public class StochasticQPPEvaluation {
         try {
             BufferedWriter tau_w = new BufferedWriter(
                     new FileWriter(String.format("stochastic-qpp/results-%s/%s_%s-tau.dat",
-                            relevanceAwareSampling? "rel": "random",
+                            samplingModeName,
                             qppMethod.name(), targetMetric.toString())));
 
             for (int cutoff: CUTOFFS) {
@@ -143,7 +149,7 @@ public class StochasticQPPEvaluation {
 
                 BufferedWriter bw = new BufferedWriter(new FileWriter(
                         String.format("stochastic-qpp/results-%s/%s_%s_%d.dat",
-                                relevanceAwareSampling? "rel": "random",
+                                samplingModeName,
                                 qppMethod.name(), targetMetric.toString(), cutoff)));
 
                 System.out.println(String.format("Cutoff: %d\tdelta_tau = %.4f", cutoff, delta_tau));
@@ -198,21 +204,20 @@ public class StochasticQPPEvaluation {
     }
 
     public static void main(String[] args) throws Exception {
-
         //final String resFile = Constants.BM25_Top100_DL1920;
         final String resFile = Constants.ColBERT_Top100_DL1920;
 
-        boolean[] modes = {/*true,*/ false};
+        String[] samplingModes = {"U", "R"};
         final Metric[] targetMetricNames = {/*Metric.AP, Metric.nDCG*/ Metric.RR};
 
         for (Metric m: targetMetricNames) {
-            for (boolean relAwareSampling : modes) {
+            for (String samplingMode : samplingModes) {
                 StochasticQPPEvaluation stochasticQppEval =
                         new StochasticQPPEvaluation(
                                 Constants.QUERIES_DL1920,
                                 Constants.QRELS_DL1920,
                                 resFile,
-                                relAwareSampling, m);
+                                samplingMode, m);
 
                 QPPMethod[] qppMethods = {
                         new NQCSpecificity(stochasticQppEval.retriever.getSearcher()),
@@ -222,7 +227,7 @@ public class StochasticQPPEvaluation {
                 };
 
                 for (QPPMethod qppMethod : qppMethods) {
-                    System.out.println(String.format("Evaluating %s on %s with RAS=%s", qppMethod.name(), m.toString(), relAwareSampling));
+                    System.out.println(String.format("Evaluating %s on %s with RAS=%s", qppMethod.name(), m.toString(), samplingMode));
                     stochasticQppEval.setQppMethod(qppMethod);
                     stochasticQppEval.batchEvaluate();
                 }

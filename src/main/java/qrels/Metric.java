@@ -6,6 +6,8 @@ public enum Metric {
     P_10,
     Recall,
     nDCG,
+    nDCG_10,
+    nDCG_20,
     AWRF,
     AWRF_NDCG
 }

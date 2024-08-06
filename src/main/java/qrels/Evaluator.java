@@ -31,6 +31,12 @@ public class Evaluator {
         fillRelInfo();
     }
 
+    public Evaluator(AllRelRcds relRcds, Map<String, TopDocs> topDocsMap) {
+        this.relRcds = relRcds;
+        retRcds = new AllRetrievedResults(topDocsMap);
+        fillRelInfo();
+    }
+
     public Evaluator(String qrelsFile, String resFile, KNNRelModel knnModel) throws Exception {
         relRcds = new AllRelRcds(qrelsFile);
         retRcds = new AllRetrievedResults(resFile);

@@ -69,7 +69,7 @@ public class RankSwapper {
         return rerankedDocs;
     }
 
-    private TopDocs swapRanks(TopDocs topDocs, int relRank, int nonRelRank) {
+    TopDocs swapRanks(TopDocs topDocs, int relRank, int nonRelRank) {
         ScoreDoc[] scoreDocs = new ScoreDoc[topDocs.scoreDocs.length];
         for (int i=0; i < scoreDocs.length; i++) {
             scoreDocs[i] = new ScoreDoc(topDocs.scoreDocs[i].doc, topDocs.scoreDocs[i].score);
@@ -92,7 +92,7 @@ public class RankSwapper {
         return rerankedDocs;
     }
 
-    private List<TopDocs> samplePermutations(String qid, Evaluator evaluator, TopDocs topDocs) {
+    List<TopDocs> samplePermutations(String qid, Evaluator evaluator, TopDocs topDocs) {
         List<Integer> relRanks = new ArrayList<>();
         List<Integer> nrelRanks = new ArrayList<>();
         List<TopDocs> permutedTopDocs = new ArrayList<>();
@@ -125,5 +125,4 @@ public class RankSwapper {
 
         return permutedTopDocs;
     }
-
 }

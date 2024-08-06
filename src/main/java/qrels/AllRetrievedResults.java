@@ -124,7 +124,7 @@ public class AllRetrievedResults {
                     Double.parseDouble(tokens[4])
             );
         }
-        else {
+        else if (tokens.length==2) {
             res.addTuple(tokens[1]); // <QID> <RANK> tuples
         }
         return qid;
@@ -206,7 +206,9 @@ public class AllRetrievedResults {
             case AP: res = rr.computeAP(); break;
             case P_10: res = rr.precAtTop(10); break;
             case Recall: res = rr.computeRecall(); break;
-            case nDCG: res = rr.computeNdcg(Constants.NDCG_CUTOFF);
+            case nDCG: res = rr.computeNdcg(100); break;
+            case nDCG_10: res = rr.computeNdcg(10); break;
+            case nDCG_20: res = rr.computeNdcg(20); break;
         }
         return res;
     }
@@ -224,7 +226,7 @@ public class AllRetrievedResults {
             map += res.computeAP();
             pAt5 += res.precAtTop(5);
             avgRecall += res.computeRecall();
-            avgNDCG += res.computeNdcg(Constants.NDCG_CUTOFF);
+            avgNDCG += res.computeNdcg(100);
         }
 
         buff.append("recall:\t").append(avgRecall/(float)allRelInfo.getTotalNumRel()).append("\n");

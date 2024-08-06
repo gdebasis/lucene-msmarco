@@ -202,6 +202,17 @@ public class RetrievedResults implements Comparable<RetrievedResults> {
     }
 
     float computeNdcg(int cutoff) {
+        /*
+        List<Integer> rels =
+            rtuples.stream()
+                .filter(x->x.rel>=Constants.EVAL_MIN_REL)
+                .map(x->x.rel)
+                .sorted(Comparator.reverseOrder())  // more relevant at a smaller rank value is ideal
+                .limit(cutoff)
+                .collect(Collectors.toList()
+        );
+         */
+
         List<Integer> rels =
             relInfo.relMap.values()
                 .stream()

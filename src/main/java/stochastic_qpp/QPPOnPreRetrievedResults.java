@@ -30,7 +30,7 @@ public class QPPOnPreRetrievedResults {
 
     public QPPOnPreRetrievedResults(IndexReader reader, String resFile, String evalResFile, String queryFile) throws Exception {
         System.out.println("Loading results from " + resFile);
-        preRetrievedResults = new PreRetrievedResults(reader, new File(resFile), queryFile, inducedDocScoreCache);
+        preRetrievedResults = new PreRetrievedResults(reader, resFile, queryFile, inducedDocScoreCache);
 
         System.out.println("Loading per-query evaluation from " + evalResFile);
         preEvaluatedResults = new PreEvaluatedResults(evalResFile);

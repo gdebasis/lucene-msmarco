@@ -3,11 +3,14 @@ package retrieval;
 public interface Constants {
     String ID_FIELD = "id";
     String CONTENT_FIELD = "words";
+    String TREC_FAIR_IR_METADATA = "/Users/debasis/research/fair_ir/metadata.jsonl";
+    String TREC_FAIR_IR_STOCHASTIC_RUNS_DIR = "fair_ir/stochastic_runs";
     String TREC_FAIR_IR_RESDIR = "fair_ir/runs";
     String TREC_FAIR_IR_EVALDIR = "fair_ir/evals";
     String TREC_FAIR_IR_COLL = "/Users/debasis/research/fair_ir/coll.jsonl";
     String TREC_FAIR_IR_INDEX = "/Users/debasis/research/fair_ir/index";
     String TREC_FAIR_IR_QUERY_FILE = "fair_ir/topics.tsv";
+    String TREC_FAIR_IR_QRELS_FILE = "/Users/debasis/research/supervised-rlm/fair_ir/qrels.txt";
     String MSMARCO_COLL = "data/collection.tsv";
     String MSMARCO_INDEX = "index/";
     String MSMARCO_QUERY_INDEX = "query_index/";
@@ -52,7 +55,6 @@ public interface Constants {
     float QPP_COREL_LAMBDA_STEPS = 0.1f;
     int QPP_NUM_TOPK = 50;
     int EVAL_MIN_REL = 2;
-    int NDCG_CUTOFF = 10;
 
     int RBO_NUM_DOCS = 20;
     String QPP_JM_VARIANTS_FILE_W2V = "variants/trecdl_qv_w2v.csv";
