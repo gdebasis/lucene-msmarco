@@ -1,7 +1,6 @@
 package stochastic_qpp;
 
 import correlation.KendalCorrelation;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
@@ -11,19 +10,20 @@ import org.apache.lucene.store.FSDirectory;
 import qpp.*;
 import qrels.Evaluator;
 import qrels.Metric;
+import qrels.PreEvaluatedResults;
 import retrieval.Constants;
 import retrieval.MsMarcoQuery;
 import utils.IndexUtils;
 
 import java.io.File;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 public class QPPOnPreRetrievedStochasticResults {
     PreRetrievedStochasticResults preRetrievedResults;
+    PreEvaluatedResults preEvaluatedResults;
 
-    final static int NUM_RANKINGS = 100;
+    final static int NUM_RANKINGS = 10;
 
     static Map<String, Float> inducedDocScoreCache = new HashMap<>();
 
@@ -31,15 +31,17 @@ public class QPPOnPreRetrievedStochasticResults {
         IndexReader reader, String queryFile, String qrelsFile,
         String resFile) throws Exception {
 
-        preRetrievedResults = new PreRetrievedStochasticResults(reader,
-                resFile, queryFile, inducedDocScoreCache, NUM_RANKINGS, qrelsFile);
-
+        preRetrievedResults = new PreRetrievedStochasticResults(
+                reader, resFile, queryFile,
+                inducedDocScoreCache, NUM_RANKINGS, qrelsFile);
+        preEvaluatedResults = new PreEvaluatedResults(resFile + ".eval");
     }
 
     public double evaluate(QPPMethod qppMethod, Metric targetMetric) {
         int numQueries = preRetrievedResults.queries.keySet().size();
         double[] qppEstimates = new double[numQueries];
         double[] evaluatedMetricValues = new double[numQueries];
+        double avgInitialTau = 0;
 
         double tau_on_pivot, avg_tau_on_permutation_samples, del_tau, avg_del_tau = 0;
 
@@ -51,7 +53,9 @@ public class QPPOnPreRetrievedStochasticResults {
             for (MsMarcoQuery query: preRetrievedResults.queries.values()) {
                 TopDocs topDocs = topDocsMap.get(query.getId());
                 qppEstimates[query_index] = qppMethod.computeSpecificity(query, topDocs, topDocs.scoreDocs.length);
-                evaluatedMetricValues[query_index] = evaluator.compute(query.getId(), targetMetric);
+                evaluatedMetricValues[query_index] = targetMetric==Metric.AWRF?
+                        preEvaluatedResults.compute(query.getId(), Metric.AWRF):
+                        evaluator.compute(query.getId(), targetMetric);
                 query_index++;
             }
 
@@ -65,12 +69,14 @@ public class QPPOnPreRetrievedStochasticResults {
             tau_on_pivot = new KendalCorrelation().correlation(evaluatedMetricValues, qppEstimates);
             avg_tau_on_permutation_samples = evaluateWRTPivot(i, qppMethod, targetMetric); // eval relative to other
 
-            del_tau = Math.abs(tau_on_pivot - avg_tau_on_permutation_samples)/tau_on_pivot;
+            del_tau = Math.abs(tau_on_pivot - avg_tau_on_permutation_samples); // /tau_on_pivot;
+            avgInitialTau += tau_on_pivot;
             System.out.println(
                 String.format("initial tau = %.4f, avg tau over other rankings = %.4f, del = %.4f",
                         tau_on_pivot, avg_tau_on_permutation_samples, del_tau));
             avg_del_tau += del_tau;
         }
+        System.out.println(String.format("Avg Initial tau = %.4f", avgInitialTau));
 
         return avg_del_tau/NUM_RANKINGS;
     }
@@ -93,7 +99,10 @@ public class QPPOnPreRetrievedStochasticResults {
                 String qid = query.getId();
                 TopDocs permutedSample = topDocsMap.get(qid);
                 qppEstimates[query_index] = qppMethod.computeSpecificity(query, permutedSample, permutedSample.scoreDocs.length);
-                evaluatedMetricValues[query_index] = permutationEvaluator.compute(query.getId(), targetMetric);
+                evaluatedMetricValues[query_index] =
+                        evaluatedMetricValues[query_index] = targetMetric==Metric.AWRF?
+                                preEvaluatedResults.compute(query.getId(), Metric.AWRF):
+                                permutationEvaluator.compute(query.getId(), targetMetric);
                 query_index++;
             }
 
@@ -131,7 +140,7 @@ public class QPPOnPreRetrievedStochasticResults {
                         );
 
                 for (QPPMethod qppMethod : qppMethods) { // NQC, CNQC etc.
-                    double corr = qppOnPreRetrievedResults.evaluate(qppMethod, Metric.nDCG_20);
+                    double corr = qppOnPreRetrievedResults.evaluate(qppMethod, Metric.AWRF);
                     System.out.println(String.format("tau (%s, %s) = %.4f",
                             qppMethod.name(),
                             resFile,

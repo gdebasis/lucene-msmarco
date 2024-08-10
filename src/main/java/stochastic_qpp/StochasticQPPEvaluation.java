@@ -175,13 +175,14 @@ public class StochasticQPPEvaluation {
 
         try {
             TauAndSARE qppMeasuresOnInitialRanking = evaluateOnInitialRanking(cutoff);
+            System.out.println("QPP on orig list: " + qppMeasuresOnInitialRanking.tau);
 
             double tau_mean = 0;
             for (int i = 0; i < numSamples; i++) {
                 TauAndSARE qppMeasuresOnPermutedSamples = evaluateOnSingleSample(cutoff);
                 tau_mean += qppMeasuresOnPermutedSamples.tau;
 
-                delta_tau += Math.abs(qppMeasuresOnInitialRanking.tau - qppMeasuresOnPermutedSamples.tau);
+                delta_tau += Math.abs(qppMeasuresOnInitialRanking.tau - qppMeasuresOnPermutedSamples.tau)/qppMeasuresOnInitialRanking.tau;
 
                 for (int j = 0; j < delta_sare.length; j++) {
                     delta_sare[j] += Math.abs(qppMeasuresOnInitialRanking.perQuerySARE[j] - qppMeasuresOnPermutedSamples.perQuerySARE[j]);
@@ -207,8 +208,8 @@ public class StochasticQPPEvaluation {
         //final String resFile = Constants.BM25_Top100_DL1920;
         final String resFile = Constants.ColBERT_Top100_DL1920;
 
-        String[] samplingModes = {"U", "R"};
-        final Metric[] targetMetricNames = {/*Metric.AP, Metric.nDCG*/ Metric.RR};
+        String[] samplingModes = {"U" /*, "R"*/};
+        final Metric[] targetMetricNames = {Metric.AP /*, Metric.nDCG Metric.RR*/};
 
         for (Metric m: targetMetricNames) {
             for (String samplingMode : samplingModes) {
@@ -222,12 +223,12 @@ public class StochasticQPPEvaluation {
                 QPPMethod[] qppMethods = {
                         new NQCSpecificity(stochasticQppEval.retriever.getSearcher()),
                         new CumulativeNQC(stochasticQppEval.retriever.getSearcher()),
-                        new RSDSpecificity(new NQCSpecificity(stochasticQppEval.retriever.getSearcher())),
-                        new UEFSpecificity(new NQCSpecificity(stochasticQppEval.retriever.getSearcher()))
+                        //new RSDSpecificity(new NQCSpecificity(stochasticQppEval.retriever.getSearcher())),
+                        //new UEFSpecificity(new NQCSpecificity(stochasticQppEval.retriever.getSearcher()))
                 };
 
                 for (QPPMethod qppMethod : qppMethods) {
-                    System.out.println(String.format("Evaluating %s on %s with RAS=%s", qppMethod.name(), m.toString(), samplingMode));
+                    System.out.println(String.format("Evaluating %s on %s with mode=%s", qppMethod.name(), m.toString(), samplingMode));
                     stochasticQppEval.setQppMethod(qppMethod);
                     stochasticQppEval.batchEvaluate();
                 }

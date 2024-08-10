@@ -18,7 +18,7 @@ public class PreEvaluatedResults {
             perQueryEvalMap =
                 FileUtils.readLines(new File(perQueryMetricsFile), Charset.defaultCharset())
                 .stream()
-                .skip(1)
+                .skip(1) // skip header
                 .map(x-> new FairnessMetrics(x))
                 .collect(Collectors.toMap(x->x.getQid(), x->x));
 

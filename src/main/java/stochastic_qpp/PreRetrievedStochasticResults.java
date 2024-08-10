@@ -5,6 +5,7 @@ import org.apache.lucene.search.TopDocs;
 import qrels.AllRelRcds;
 import qrels.AllRetrievedResults;
 import qrels.Evaluator;
+import qrels.FairnessMetrics;
 import retrieval.MsMarcoQuery;
 import retrieval.QueryLoader;
 
@@ -19,9 +20,8 @@ public class PreRetrievedStochasticResults {
     AllRelRcds relRcds;
     Map<String, MsMarcoQuery> queries;
 
-    public PreRetrievedStochasticResults(IndexReader reader,
-         String resFile, String queryFile, Map<String, Float> inducedDocScoreCache,
-         int numRankings, String qrelsFile) throws Exception {
+    public PreRetrievedStochasticResults(IndexReader reader, String resFile, String queryFile,
+         Map<String, Float> inducedDocScoreCache, int numRankings, String qrelsFile) throws Exception {
 
         queries = QueryLoader.constructQueryMap(queryFile);
 
