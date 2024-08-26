@@ -20,8 +20,12 @@ public class Evaluator {
     }
 
     public Evaluator(String qrelsFile, String resFile) throws Exception {
+        this(qrelsFile, resFile, 1000);
+    }
+
+    public Evaluator(String qrelsFile, String resFile, int numTopDocs) throws Exception {
         relRcds = new AllRelRcds(qrelsFile);
-        retRcds = new AllRetrievedResults(resFile);
+        retRcds = new AllRetrievedResults(resFile, numTopDocs);
         fillRelInfo();
     }
 

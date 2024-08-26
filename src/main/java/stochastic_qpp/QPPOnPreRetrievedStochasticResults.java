@@ -43,7 +43,7 @@ public class QPPOnPreRetrievedStochasticResults {
         double[] evaluatedMetricValues = new double[numQueries];
         double avgInitialTau = 0;
 
-        double tau_on_pivot, avg_tau_on_permutation_samples, del_tau, avg_del_tau = 0;
+        double tau_on_pivot, avg_tau_on_permutation_samples = 0, del_tau = 0, avg_del_tau = 0;
 
         for (int i=0; i < NUM_RANKINGS; i++) {
             Map<String, TopDocs> topDocsMap = this.preRetrievedResults.topDocsMaps[i];
@@ -67,16 +67,18 @@ public class QPPOnPreRetrievedStochasticResults {
             */
 
             tau_on_pivot = new KendalCorrelation().correlation(evaluatedMetricValues, qppEstimates);
-            avg_tau_on_permutation_samples = evaluateWRTPivot(i, qppMethod, targetMetric); // eval relative to other
-
-            del_tau = Math.abs(tau_on_pivot - avg_tau_on_permutation_samples); // /tau_on_pivot;
             avgInitialTau += tau_on_pivot;
-            System.out.println(
-                String.format("initial tau = %.4f, avg tau over other rankings = %.4f, del = %.4f",
-                        tau_on_pivot, avg_tau_on_permutation_samples, del_tau));
-            avg_del_tau += del_tau;
+            if (false) {
+                avg_tau_on_permutation_samples = evaluateWRTPivot(i, qppMethod, targetMetric); // eval relative to other
+                del_tau = Math.abs(tau_on_pivot - avg_tau_on_permutation_samples); // /tau_on_pivot;
+
+                System.out.println(
+                    String.format("initial tau (%s) = %.4f, avg tau over other rankings = %.4f, del = %.4f",
+                            targetMetric.toString(), tau_on_pivot, avg_tau_on_permutation_samples, del_tau));
+                avg_del_tau += del_tau;
+            }
         }
-        System.out.println(String.format("Avg Initial tau = %.4f", avgInitialTau));
+        System.out.println(String.format("Avg Initial tau = %.4f", avgInitialTau/NUM_RANKINGS));
 
         return avg_del_tau/NUM_RANKINGS;
     }

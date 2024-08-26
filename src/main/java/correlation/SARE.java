@@ -56,6 +56,7 @@ public class SARE implements QPPCorrelationMetric {
     double computeSARC(double[] gt, double[] pred) { // correlation: higher the better
         return 1-computeSARE(gt, pred);
     }
+
     double computeSARE(double[] gt, double[] pred) { // error: lower the better
         double[] sarePerQuery = computeSAREPerQuery(gt, pred);
         return Arrays.stream(sarePerQuery).average().getAsDouble();
