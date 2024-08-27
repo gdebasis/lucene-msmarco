@@ -29,6 +29,10 @@ public class RetrievedResults implements Comparable<RetrievedResults> {
 
     boolean isRel(ResultTuple tuple) { return tuple.rel >= Constants.EVAL_MIN_REL; }
 
+    public void sortResultTuples(int numWanted) {
+        rtuples = rtuples.stream().sorted().limit(numWanted).collect(Collectors.toList());
+    }
+
     public void sortResultTuples() {
         rtuples = rtuples.stream().sorted().collect(Collectors.toList());
     }

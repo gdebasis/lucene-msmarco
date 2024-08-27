@@ -57,7 +57,7 @@ public class DLQPPEvaluatorSimple {
     public static void main(String[] args) throws Exception {
         List<MsMarcoQuery> queries;
         final String resFile = /* Constants.BM25_Top100_DL1920 */ Constants.ColBERT_Top100_DL1920;
-        final Metric[] targetMetricNames = {Metric.RR};
+        final Metric[] targetMetricNames = {/*Metric.nDCG,*/ Metric.RR};
 
         OneStepRetriever retriever = new OneStepRetriever(Constants.QUERIES_DL1920, resFile);
 

@@ -7,6 +7,7 @@ import retrieval.Constants;
 
 import java.io.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class AllRetrievedResults {
     Map<String, RetrievedResults> allRetMap;
@@ -21,12 +22,12 @@ public class AllRetrievedResults {
         try (FileReader fr = new FileReader(resFile); BufferedReader br = new BufferedReader(fr); ) {
             if (skipHeader) br.readLine();
             while ((line = br.readLine()) != null) {
-                storeRetRcd(line, numWanted);
+                storeRetRcd(line);
             }
         }
         catch (Exception ex) { ex.printStackTrace(); }
 
-        sortResults();
+        sortResults(numWanted);
     }
 
     public AllRetrievedResults(String resFile, boolean skipHeader) {
@@ -72,6 +73,20 @@ public class AllRetrievedResults {
 
         // This ensures that the res file may not have to be sorted; we sort by the scores
         allRetMap.values().forEach(x->x.sortResultTuples());
+        for (RetrievedResults rr: allRetMap.values()) {
+            int rank = 1;
+            for (ResultTuple tuple: rr.getTuples()) {
+                tuple.rank = rank++;
+            }
+        }
+    }
+
+    private void sortResults(int numWanted) {
+        if (!Constants.AUTO_SORT_TOP_DOCS)
+            return;
+
+        // This ensures that the res file may not have to be sorted; we sort by the scores
+        allRetMap.values().forEach(x->x.sortResultTuples(numWanted));
         for (RetrievedResults rr: allRetMap.values()) {
             int rank = 1;
             for (ResultTuple tuple: rr.getTuples()) {
@@ -126,37 +141,6 @@ public class AllRetrievedResults {
         }
         else if (tokens.length==2) {
             res.addTuple(tokens[1]); // <QID> <RANK> tuples
-        }
-        return qid;
-    }
-
-    String storeRetRcd(String line, int numWanted) {
-        String[] tokens = line.split("\\s+");
-
-        /* Here we check for two different file types (the third one we leave for a subclass):
-        1. RES file --- TREC style 6 column file
-        2. Minimalist two column file --- 1st column  QID, 2nd column Doc Name (Rank is the presented order)
-        3. Minimalist res file for stochastic ranking ---
-        1st column  QID, 2nd column rank number, 3rd column Doc Name (Rank is the presented order)
-        */
-
-        String qid = tokens[0];
-        RetrievedResults res = allRetMap.get(qid);
-        if (res == null) {
-            res = new RetrievedResults(qid);
-            allRetMap.put(qid, res);
-        }
-
-        if (res.rtuples.size() < numWanted) {
-            if (tokens.length >= 6) {
-                res.addTuple(tokens[2],
-                    Integer.parseInt(tokens[3]), // dummy; we later on assign ranks based on the sorted positions
-                    Double.parseDouble(tokens[4])
-                );
-            }
-            else {
-                res.addTuple(tokens[1]);
-            }
         }
         return qid;
     }
