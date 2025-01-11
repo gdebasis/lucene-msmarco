@@ -7,6 +7,7 @@ public enum Metric {
     Recall,
     nDCG,
     nDCG_10,
+    nDCG_1,
     nDCG_20,
     AWRF,
     AWRF_NDCG

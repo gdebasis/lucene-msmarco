@@ -28,6 +28,7 @@ public class StochasticQPPEvaluation {
     //final static int[] CUTOFFS = {10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
     final static int[] CUTOFFS = {50};
     final static int NUM_SAMPLES = 50;
+    final static String qppScoreFilePrefix = "qpp_precomputed"; // this is a folder name
 
     public StochasticQPPEvaluation(
             String queryFile, String qrelsFile,
@@ -121,6 +122,7 @@ public class StochasticQPPEvaluation {
         for (MsMarcoQuery query : queries) {
             String qid = query.getId();
             TopDocs permutedSample = topDocsMap.get(qid);
+
             qppEstimates[i] = qppMethod.computeSpecificity(query, permutedSample, cutoff);
 
             //System.out.println("After reranking: ");
@@ -179,6 +181,7 @@ public class StochasticQPPEvaluation {
 
             double tau_mean = 0;
             for (int i = 0; i < numSamples; i++) {
+                qppMethod.setDataSource(String.format("%s/%s.%d", qppScoreFilePrefix, qppMethod.name(), i));
                 TauAndSARE qppMeasuresOnPermutedSamples = evaluateOnSingleSample(cutoff);
                 tau_mean += qppMeasuresOnPermutedSamples.tau;
 
@@ -223,6 +226,7 @@ public class StochasticQPPEvaluation {
                 QPPMethod[] qppMethods = {
                         new NQCSpecificity(stochasticQppEval.retriever.getSearcher()),
                         new CumulativeNQC(stochasticQppEval.retriever.getSearcher()),
+                        new PreComputedPredictor("BERT-QPP")
                         //new RSDSpecificity(new NQCSpecificity(stochasticQppEval.retriever.getSearcher())),
                         //new UEFSpecificity(new NQCSpecificity(stochasticQppEval.retriever.getSearcher()))
                 };

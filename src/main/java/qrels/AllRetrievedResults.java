@@ -191,6 +191,7 @@ public class AllRetrievedResults {
             case P_10: res = rr.precAtTop(10); break;
             case Recall: res = rr.computeRecall(); break;
             case nDCG: res = rr.computeNdcg(100); break;
+            case nDCG_1: res = rr.computeNdcg(1); break;
             case nDCG_10: res = rr.computeNdcg(10); break;
             case nDCG_20: res = rr.computeNdcg(20); break;
         }

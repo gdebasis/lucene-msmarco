@@ -22,4 +22,5 @@ public class TauAndSARE {
     public double tau() { return tau; }
     public double[] getPerQuerySARE() { return perQuerySARE; }
     public double sare() { return Arrays.stream(perQuerySARE).average().getAsDouble(); }
+    public double sarc() { return 1-Arrays.stream(perQuerySARE).average().getAsDouble(); } // 1-sare
 }

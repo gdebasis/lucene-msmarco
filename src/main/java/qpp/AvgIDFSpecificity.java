@@ -22,6 +22,8 @@ public class AvgIDFSpecificity implements QPPMethod {
         this.reader = searcher.getIndexReader();
     }
 
+    public void setDataSource(String dataFile) throws IOException {}
+
     @Override
     public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs, int k) {
         double specificity = 0;
