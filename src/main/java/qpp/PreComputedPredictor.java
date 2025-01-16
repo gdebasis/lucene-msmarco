@@ -87,7 +87,7 @@ public class PreComputedPredictor extends BaseQPPMethod {
                     System.exit(1); // this CAN't happen!
                 }
 
-                sb.append(String.format("%d>%d,", prePermutationRank, rank));
+                sb.append(String.format("%s\t%d>%d,", query.getId(), prePermutationRank, rank));
                 rank++;
             }
             bw.write(sb.toString());
