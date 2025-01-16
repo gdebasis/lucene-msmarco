@@ -70,7 +70,7 @@ public class PreComputedPredictor extends BaseQPPMethod {
                 qppScoreFilePrefix, this.name(), sampleId)));
 
         for (MsMarcoQuery query: queries) {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder(query.getId() + "\t");
 
             TopDocs pivotTopDocSample = this.pivotTopDocsMap.get(query.getId());
             docId2Rank = new HashMap<>();
@@ -81,13 +81,14 @@ public class PreComputedPredictor extends BaseQPPMethod {
 
             TopDocs permutedSample = topDocsMap.get(query.getId());
             rank = 1;
+
             for (ScoreDoc sd : permutedSample.scoreDocs) {
                 Integer prePermutationRank = docId2Rank.get(sd.doc);
                 if (prePermutationRank == null) {
                     System.exit(1); // this CAN't happen!
                 }
 
-                sb.append(String.format("%s\t%d>%d,", query.getId(), prePermutationRank, rank));
+                sb.append(String.format("%d>%d,", prePermutationRank, rank));
                 rank++;
             }
             bw.write(sb.toString());
