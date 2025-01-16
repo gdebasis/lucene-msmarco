@@ -11,6 +11,7 @@ import retrieval.OneStepRetriever;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.util.*;
 
 public class StochasticQPPEvaluation {
@@ -28,7 +29,6 @@ public class StochasticQPPEvaluation {
     //final static int[] CUTOFFS = {10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
     final static int[] CUTOFFS = {50};
     final static int NUM_SAMPLES = 50;
-    final static String qppScoreFilePrefix = "qpp_precomputed"; // this is a folder name
 
     public StochasticQPPEvaluation(
             String queryFile, String qrelsFile,
@@ -102,7 +102,7 @@ public class StochasticQPPEvaluation {
         return qppMeasures;
     }
 
-    public TauAndSARE evaluateOnSingleSample(int cutoff) {
+    public TauAndSARE evaluateOnSingleSample(int cutoff, int sampleId) throws IOException {
         double[] qppEstimates = new double[queries.size()];
         int i=0;
         Map<String, TopDocs> topDocsMap = new HashMap<>();
@@ -114,6 +114,11 @@ public class StochasticQPPEvaluation {
                     rankingSampler.get(qid).sample();
 
             topDocsMap.put(qid, permutedSample);
+        }
+
+        if (Constants.WRITE_PERMS) {
+            qppMethod.writePermutationMap(queries, topDocsMap, sampleId);
+            return null;
         }
 
         Evaluator permutationEvaluator = new Evaluator(qrelsFile, topDocsMap);
@@ -147,6 +152,7 @@ public class StochasticQPPEvaluation {
 
             for (int cutoff: CUTOFFS) {
                 TauAndSARE qppMetrics = evaluateAggregate(tau_w, cutoff, NUM_SAMPLES);
+                if (qppMetrics == null) continue;
                 double delta_tau = qppMetrics.tau;
 
                 BufferedWriter bw = new BufferedWriter(new FileWriter(
@@ -174,23 +180,34 @@ public class StochasticQPPEvaluation {
 
     public TauAndSARE evaluateAggregate(BufferedWriter bw, int cutoff, int numSamples) {
         double delta_tau = 0, delta_sare[] = new double[this.queries.size()];
-
+        TauAndSARE qppMeasuresOnInitialRanking = null;
         try {
-            TauAndSARE qppMeasuresOnInitialRanking = evaluateOnInitialRanking(cutoff);
-            System.out.println("QPP on orig list: " + qppMeasuresOnInitialRanking.tau);
+            if (!Constants.WRITE_PERMS) {
+                qppMethod.setDataSource(String.format("%s/%s.0.tsv", PreComputedPredictor.qppScoreFilePrefix, qppMethod.name()));
+                qppMeasuresOnInitialRanking = evaluateOnInitialRanking(cutoff);
+                System.out.println("QPP on orig list: " + qppMeasuresOnInitialRanking.tau);
+            }
 
             double tau_mean = 0;
             for (int i = 0; i < numSamples; i++) {
-                qppMethod.setDataSource(String.format("%s/%s.%d", qppScoreFilePrefix, qppMethod.name(), i));
-                TauAndSARE qppMeasuresOnPermutedSamples = evaluateOnSingleSample(cutoff);
-                tau_mean += qppMeasuresOnPermutedSamples.tau;
+                int sampleId = i+1;  /* starts from 1 */
+                qppMethod.setDataSource(String.format("%s/%s.%d.tsv",
+                        PreComputedPredictor.qppScoreFilePrefix, qppMethod.name(), sampleId));
 
+                TauAndSARE qppMeasuresOnPermutedSamples = evaluateOnSingleSample(cutoff, sampleId);
+                if (qppMeasuresOnPermutedSamples == null)
+                    continue;
+
+                tau_mean += qppMeasuresOnPermutedSamples.tau;
                 delta_tau += Math.abs(qppMeasuresOnInitialRanking.tau - qppMeasuresOnPermutedSamples.tau)/qppMeasuresOnInitialRanking.tau;
 
                 for (int j = 0; j < delta_sare.length; j++) {
                     delta_sare[j] += Math.abs(qppMeasuresOnInitialRanking.perQuerySARE[j] - qppMeasuresOnPermutedSamples.perQuerySARE[j]);
                 }
             }
+
+            if (Constants.WRITE_PERMS)
+                return null;
 
             for (int j = 0; j < delta_sare.length; j++)
                 delta_sare[j] /= numSamples;
@@ -211,7 +228,7 @@ public class StochasticQPPEvaluation {
         //final String resFile = Constants.BM25_Top100_DL1920;
         final String resFile = Constants.ColBERT_Top100_DL1920;
 
-        String[] samplingModes = {"U" /*, "R"*/};
+        String[] samplingModes = { "U", /*"R"*/};
         final Metric[] targetMetricNames = {Metric.AP /*, Metric.nDCG Metric.RR*/};
 
         for (Metric m: targetMetricNames) {
@@ -224,9 +241,9 @@ public class StochasticQPPEvaluation {
                                 samplingMode, m);
 
                 QPPMethod[] qppMethods = {
-                        new NQCSpecificity(stochasticQppEval.retriever.getSearcher()),
-                        new CumulativeNQC(stochasticQppEval.retriever.getSearcher()),
-                        new PreComputedPredictor("BERT-QPP")
+                        //new NQCSpecificity(stochasticQppEval.retriever.getSearcher()),
+                        //new CumulativeNQC(stochasticQppEval.retriever.getSearcher()),
+                        new PreComputedPredictor("BERT-QPP", stochasticQppEval.topDocsMapWithoutPerturbation)
                         //new RSDSpecificity(new NQCSpecificity(stochasticQppEval.retriever.getSearcher())),
                         //new UEFSpecificity(new NQCSpecificity(stochasticQppEval.retriever.getSearcher()))
                 };

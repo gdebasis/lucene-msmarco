@@ -11,9 +11,11 @@ import qrels.*;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
-public class AvgIDFSpecificity implements QPPMethod {
+public class AvgIDFSpecificity extends BaseQPPMethod {
     IndexReader reader;
     IndexSearcher searcher;
 
@@ -22,7 +24,8 @@ public class AvgIDFSpecificity implements QPPMethod {
         this.reader = searcher.getIndexReader();
     }
 
-    public void setDataSource(String dataFile) throws IOException {}
+    public void writePermutationMap(List<MsMarcoQuery> queries, Map<String, TopDocs> topDocsMap, int sampleNumber) throws IOException {}
+    public void setDataSource(String dataFile) throws IOException { }
 
     @Override
     public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs, int k) {

@@ -72,4 +72,8 @@ public interface Constants {
     String ColBERT_Top100_DL1920 = "stochastic-qpp/trecdl1920.colbert-e2e.res";
     boolean AUTO_SORT_TOP_DOCS = true;
     boolean ALLOW_UNSORTED_TOPDOCS = true;
+
+    boolean WRITE_PERMS = true;
+    int NUM_SHUFFLES = 50;
+
 }

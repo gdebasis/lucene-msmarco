@@ -10,6 +10,8 @@ import retrieval.MsMarcoQuery;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import qrels.RetrievedResults;
 
@@ -24,6 +26,7 @@ public abstract class BaseIDFSpecificity implements QPPMethod {
         this.reader = searcher.getIndexReader();
     }
 
+    public void writePermutationMap(List<MsMarcoQuery> queries, Map<String, TopDocs> topDocsMap, int sampleNumber) throws IOException {}
     public void setDataSource(String dataFile) throws IOException { }
 
     @Override

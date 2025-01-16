@@ -16,7 +16,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
-public class UEFSpecificity implements QPPMethod {
+public class UEFSpecificity extends BaseQPPMethod {
     BaseIDFSpecificity qppMethod;
 
     static Random rnd = new Random(IndexUtils.SEED);

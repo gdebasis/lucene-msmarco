@@ -10,7 +10,7 @@ import retrieval.MsMarcoQuery;
 
 import java.util.*;
 
-public class RSDSpecificity implements QPPMethod {
+public class RSDSpecificity extends BaseQPPMethod {
     BaseIDFSpecificity qppMethod;
 
     static Random rnd = new Random(IndexUtils.SEED);

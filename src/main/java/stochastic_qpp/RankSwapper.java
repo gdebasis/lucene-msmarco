@@ -40,14 +40,13 @@ public class RankSwapper {
 
     static public TopDocs shuffle(TopDocs topDocs) {
         int n = topDocs.scoreDocs.length;
-        final int numShuffles = 10;
 
         ScoreDoc[] scoreDocs = new ScoreDoc[topDocs.scoreDocs.length];
         for (int i=0; i < scoreDocs.length; i++) {
             scoreDocs[i] = new ScoreDoc(topDocs.scoreDocs[i].doc, topDocs.scoreDocs[i].score);
         }
 
-        for (int i=0; i<numShuffles; i++) {
+        for (int i=0; i<Constants.NUM_SHUFFLES; i++) {
             int relRank = (int) (Math.random() * n);
             int nonRelRank = (int) (Math.random() * n);
 
