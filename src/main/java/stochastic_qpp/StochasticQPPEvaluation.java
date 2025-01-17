@@ -188,6 +188,8 @@ public class StochasticQPPEvaluation {
                 System.out.println("QPP on orig list: " + qppMeasuresOnInitialRanking.tau);
             }
 
+            qppMethod.writePermutationMap(queries, topDocsMapWithoutPerturbation, 0);
+
             double tau_mean = 0;
             for (int i = 0; i < numSamples; i++) {
                 int sampleId = i+1;  /* starts from 1 */
@@ -228,7 +230,11 @@ public class StochasticQPPEvaluation {
         //final String resFile = Constants.BM25_Top100_DL1920;
         final String resFile = Constants.ColBERT_Top100_DL1920;
 
-        String[] samplingModes = { "U", /*"R"*/};
+        String[] samplingModes = {
+            //"U",
+            "R"
+        };
+
         final Metric[] targetMetricNames = {Metric.AP /*, Metric.nDCG Metric.RR*/};
 
         for (Metric m: targetMetricNames) {
