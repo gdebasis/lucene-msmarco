@@ -104,8 +104,8 @@ public class RankSwapper {
     }
 
     List<TopDocs> samplePermutations(String qid, Evaluator evaluator, TopDocs topDocs) {
-        List<Integer> relRanks = new ArrayList<>();
-        List<Integer> nrelRanks = new ArrayList<>();
+        Set<Integer> relRanks = new ArrayList<>();
+        Set<Integer> nrelRanks = new ArrayList<>();
         List<TopDocs> permutedTopDocs = new ArrayList<>();
         permutedTopDocs.add(topDocs);  // make sure that the identity permutation is there to avoid NULL issues
 
@@ -115,6 +115,9 @@ public class RankSwapper {
         List<ResultTuple> resultTuples = retrievedResults.getTuples();
 
         int rank=0;
+        if (Constants.TOPDOC_ALWAYS_SWAPPED)
+            relRanks.add(0);
+
         for (ResultTuple resultTuple: resultTuples) {
             String docId = resultTuple.getDocName();
             if (relDocs.isRel(docId)) {
@@ -128,9 +131,9 @@ public class RankSwapper {
 
         for (int relRank: relRanks) {
             for (int nrelRank: nrelRanks) {
-                if (relRank > nrelRank) {
-                    permutedTopDocs.add(swapRanks(topDocs, relRank, nrelRank));
-                }
+                // if (relRank > nrelRank) {
+                permutedTopDocs.add(swapRanks(topDocs, relRank, nrelRank));
+                // }
             }
         }
 
