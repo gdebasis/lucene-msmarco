@@ -75,5 +75,6 @@ public interface Constants {
 
     boolean WRITE_PERMS = true;
     int NUM_SHUFFLES = 50;
+    boolean TOPDOC_ALWAYS_SWAPPED = true;
 
 }

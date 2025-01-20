@@ -38,6 +38,17 @@ public class RankSwapper {
         return selected;
     }
 
+    // util function that selects a random integer between 0 and M-1, that isn't equal to k
+    static public int selectRandomNotEqual(int k, int M) {
+        if (k==0) return 1 + (int)(Math.random()*M);
+        if (k==M-1) return (int)(Math.random()*(M-1));
+
+        return Math.random() <= 0.5f?
+                (int) (Math.random() * k) : // choose in [0, k)
+                (k+1) + (int) (Math.random() * (M-k-1)) // choose in [k+1, M)
+        ;
+    }
+
     static public TopDocs shuffle(TopDocs topDocs) {
         int n = topDocs.scoreDocs.length;
 
@@ -47,8 +58,8 @@ public class RankSwapper {
         }
 
         for (int i=0; i<Constants.NUM_SHUFFLES; i++) {
-            int relRank = (int) (Math.random() * n);
-            int nonRelRank = (int) (Math.random() * n);
+            int relRank = Constants.TOPDOC_ALWAYS_SWAPPED? 0 : (int) (Math.random() * n);
+            int nonRelRank = selectRandomNotEqual(relRank, n);
 
             // swap a rel doc with a nonrel one --- keep the scores in tact
             /*
@@ -56,6 +67,7 @@ public class RankSwapper {
             scoreDocs[nonRelRank] = new ScoreDoc(scoreDocs[relRank].doc, scoreDocs[relRank].score);
             scoreDocs[relRank] = tmp;
              */
+
             ScoreDoc tmp = new ScoreDoc(scoreDocs[nonRelRank].doc, scoreDocs[nonRelRank].score);
             scoreDocs[nonRelRank] = new ScoreDoc(scoreDocs[relRank].doc, scoreDocs[relRank].score);
             if (!Constants.ALLOW_UNSORTED_TOPDOCS)
@@ -123,5 +135,29 @@ public class RankSwapper {
         }
 
         return permutedTopDocs;
+    }
+
+    public static void main(String[] args) {
+
+        System.out.println("[0, 10) neq 5");
+        for (int i=0; i < 20; i++) {
+            int r = selectRandomNotEqual(0, 10);
+            System.out.print(r + ", ");
+        }
+        System.out.println();
+
+        System.out.println("[0, 10) neq 2");
+        for (int i=0; i < 20; i++) {
+            int r = selectRandomNotEqual(2, 10);
+            System.out.print(r + ", ");
+        }
+        System.out.println();
+
+        System.out.println("[0, 10) neq 9");
+        for (int i=0; i < 20; i++) {
+            int r = selectRandomNotEqual(9, 10);
+            System.out.print(r + ", ");
+        }
+        System.out.println();
     }
 }
