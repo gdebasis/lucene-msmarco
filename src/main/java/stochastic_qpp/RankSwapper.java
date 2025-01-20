@@ -104,8 +104,8 @@ public class RankSwapper {
     }
 
     List<TopDocs> samplePermutations(String qid, Evaluator evaluator, TopDocs topDocs) {
-        Set<Integer> relRanks = new ArrayList<>();
-        Set<Integer> nrelRanks = new ArrayList<>();
+        Set<Integer> relRanks = new TreeSet<>();
+        Set<Integer> nrelRanks = new TreeSet<>();
         List<TopDocs> permutedTopDocs = new ArrayList<>();
         permutedTopDocs.add(topDocs);  // make sure that the identity permutation is there to avoid NULL issues
 
