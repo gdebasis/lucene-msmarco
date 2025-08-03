@@ -19,6 +19,12 @@ public class Evaluator {
         retRcds = new AllRetrievedResults(resFile);
     }
 
+    public Evaluator(String qrelsFile, AllRetrievedResults allRetrievedResults) {
+        relRcds = new AllRelRcds(qrelsFile);
+        retRcds = allRetrievedResults;
+        fillRelInfo();
+    }
+
     public Evaluator(String qrelsFile, String resFile) throws Exception {
         this(qrelsFile, resFile, 1000);
     }

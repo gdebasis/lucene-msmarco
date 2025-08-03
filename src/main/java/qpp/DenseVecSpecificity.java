@@ -14,20 +14,22 @@ import java.util.Map;
 public class DenseVecSpecificity extends BaseIDFSpecificity {
     DocVectorReader vecReader;
     Map<Integer, float[]> queryVecs;
+    int numTopDocs;
 
-    public DenseVecSpecificity(DocVectorReader vecReader, Map<Integer, float[]> queryVecs) {
+    public DenseVecSpecificity(DocVectorReader vecReader, Map<Integer, float[]> queryVecs, int numTopDocs) {
         this.vecReader = vecReader;
         this.queryVecs = queryVecs;
+        this.numTopDocs = numTopDocs;
     }
 
     @Override
-    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs, int cutoff) {
+    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs, int cutoff /* cutoff is not used here*/) {
         List<float[]> vecs = new ArrayList<>();
         float[] qvec = queryVecs.get(Integer.parseInt(q.getId()));
         vecs.add(qvec);
 
         float[] dvec = new float[DocVectorReader.VECTOR_DIM];
-        int k = Math.min(cutoff, topDocs.scoreDocs.length);
+        int k = Math.min(numTopDocs, topDocs.scoreDocs.length);
 
         for (int i=0; i < k; i++) {
             try {
@@ -37,16 +39,13 @@ public class DenseVecSpecificity extends BaseIDFSpecificity {
             vecs.add(dvec);
         }
 
-        return computeDiameter(vecs, k);
+        return computeDiameter(vecs);
     }
 
-    public float computeDiameter(List<float[]> vecs, int cutoff) {
-        if (vecs == null || vecs.size() < cutoff + 1) { // cutoff: 1,2,...k
+    public float computeDiameter(List<float[]> vecs) {
+        if (vecs == null || vecs.size() < numTopDocs + 1) { // cutoff: 1,2,...k
             throw new IllegalArgumentException("Insufficient vectors: need at least 'cutoff' docs and 1 query vector.");
         }
-
-        if (vecs.get(0) == null)
-            vecs = vecs;
 
         int dim = vecs.get(0).length;
         float[] minVals = new float[dim];
@@ -58,7 +57,7 @@ public class DenseVecSpecificity extends BaseIDFSpecificity {
         System.arraycopy(queryVec, 0, maxVals, 0, dim);
 
         // Include first `cutoff` doc vectors
-        for (int i = 0; i <= cutoff; i++) { // docs start from index 1 (0 is the query which we include in computation)
+        for (int i = 0; i <= numTopDocs; i++) { // docs start from index 1 (0 is the query which we include in computation)
             float[] dvec = vecs.get(i);
             for (int d = 0; d < dim; d++) {
                 minVals[d] = Math.min(minVals[d], dvec[d]);
@@ -74,4 +73,7 @@ public class DenseVecSpecificity extends BaseIDFSpecificity {
 
         return (float)Math.log(1+1/diameter);
     }
+
+    @Override
+    public String name() { return "dense-qpp"; }
 }

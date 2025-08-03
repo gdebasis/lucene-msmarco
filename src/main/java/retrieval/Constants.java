@@ -67,6 +67,8 @@ public interface Constants {
 
     String QRELS_DL1920 = "data/trecdl/trecdl1920.qrels";
     String QUERIES_DL1920 = "data/trecdl/trecdl1920.queries";
+    String QRELS_DL19 = "data/trecdl/pass_2019.qrels";
+    String QRELS_DL20 = "data/trecdl/pass_2020.qrels";
 
     String QUERIES_DL19 = "data/trecdl/pass_2019.queries";
     String QUERIES_DL20 = "data/trecdl/pass_2020.queries";
@@ -91,4 +93,5 @@ public interface Constants {
     String DL19_CONTRIEVER_VECS = "denseqpp/trecdl2019_contriever_msmarco_mean_embeddings.bin";
     String DL20_CONTRIEVER_VECS = "denseqpp/trecdl2020_contriever_msmarco_mean_embeddings.bin";
     int RECORCDS_PER_CHUNK = 10_000;
+    int DENSEQPP_NUM_TOP_DOCS = 5;
 }
