@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface QPPMethod {
+    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs);
     public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs, int k);
     public String name();
     public void setDataSource(String dataFile) throws IOException;

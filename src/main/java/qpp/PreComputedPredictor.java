@@ -19,12 +19,14 @@ public class PreComputedPredictor extends BaseQPPMethod {
     Map<String, Float> qppMap;
     Map<Integer, Integer> docId2Rank;
     Map<String, TopDocs> pivotTopDocsMap;
+    int k;
 
     final public static String qppScoreFilePrefix = "qpp_precomputed"; // this is a folder name
 
-    public PreComputedPredictor(String name, Map<String, TopDocs> pivotTopDocsMap) {
+    public PreComputedPredictor(String name, Map<String, TopDocs> pivotTopDocsMap, int k) {
         this.name = name;
         this.pivotTopDocsMap = pivotTopDocsMap;
+        this.k=k;
     }
 
     public void setPivotTopDocSample(TopDocs pivotTopDocSample) {
@@ -50,13 +52,19 @@ public class PreComputedPredictor extends BaseQPPMethod {
         }
     }
 
-    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs, int k) {
+    @Override
+    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs) {
+        return computeSpecificity(q, topDocs, this.k);
+    }
+
+    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs, int cutoff) {
+        int actualK = Math.min(this.k, cutoff);
         Float qpp_score = qppMap.get(q.getId());
         return qpp_score==null? 0: qpp_score;
     }
 
     public String name() {
-        return name;
+        return name+"@k"+k;
     }
 
     // Dump a permutation map file in the following format:

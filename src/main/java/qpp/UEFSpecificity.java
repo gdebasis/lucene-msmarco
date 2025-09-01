@@ -18,18 +18,20 @@ import java.util.logging.Logger;
 
 public class UEFSpecificity extends BaseQPPMethod {
     BaseIDFSpecificity qppMethod;
-
+    int k;
     static Random rnd = new Random(IndexUtils.SEED);
     static final int NUM_SAMPLES = 10;
 
-    public UEFSpecificity(BaseIDFSpecificity qppMethod) {
+    public UEFSpecificity(BaseIDFSpecificity qppMethod, int k) {
         this.qppMethod = qppMethod;
+        this.k =k;
     }
 
     TopDocs sampleTopDocs(TopDocs topDocs, int k) {
 //        ScoreDoc[] sampledScoreDocs = new ScoreDoc[k];
-        ScoreDoc[] sampledScoreDocs = new ScoreDoc[Math.min(topDocs.scoreDocs.length, k)];
-        List<ScoreDoc> sdList = new ArrayList(Arrays.asList(topDocs.scoreDocs));
+        int actualK = Math.min(topDocs.scoreDocs.length, k);
+        ScoreDoc[] sampledScoreDocs = new ScoreDoc[actualK];
+        List<ScoreDoc> sdList = new ArrayList<>(Arrays.asList(topDocs.scoreDocs));
         Collections.shuffle(sdList, rnd);
         sampledScoreDocs = sdList.subList(0, Math.min(topDocs.scoreDocs.length, k)).toArray(sampledScoreDocs);
         //+++LUCENE_COMPATIBILITY: Sad there's no #ifdef like C!
@@ -40,14 +42,22 @@ public class UEFSpecificity extends BaseQPPMethod {
         //---LUCENE_COMPATIBILITY
     }
 
+
     @Override
+    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs) {
+        // default: pass k = topDocs.scoreDocs.length (use full list)
+//        return computeSpecificity(q, topDocs, topDocs.scoreDocs.length);
+        return computeSpecificity(q, topDocs, this.k);
+    }
+
     public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs, int k) {
         TopDocs topDocs_rr = null;
         double avgRankDist = 0;
         RelevanceModelIId rlm = null;
 
         for (int i=0; i < NUM_SAMPLES; i++) {
-            TopDocs sampledTopDocs = sampleTopDocs(topDocs, Math.min(Constants.RLM_NUM_TOP_DOCS, topDocs.scoreDocs.length));
+//            TopDocs sampledTopDocs = sampleTopDocs(topDocs, Math.min(Constants.RLM_NUM_TOP_DOCS, topDocs.scoreDocs.length));
+            TopDocs sampledTopDocs = sampleTopDocs(topDocs, k);
             try {
                 rlm = new RelevanceModelConditional(
                         qppMethod.searcher, q, sampledTopDocs, sampledTopDocs.scoreDocs.length);

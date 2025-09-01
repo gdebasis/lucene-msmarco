@@ -13,16 +13,37 @@ public class NQCSpecificity extends BaseIDFSpecificity {
 
     public NQCSpecificity() { }
 
-    public NQCSpecificity(IndexSearcher searcher) {
-        super(searcher);
+    public NQCSpecificity(IndexSearcher searcher, int k) {
+        super(searcher,k);
     }
 
     @Override
-    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs, int k) {
-        return computeNQC(q, topDocs, k);
+    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs) {
+        return computeNQC(q, topDocs);
     }
 
+    /**
+     * Version 1: uses the class field k (default)
+     */
+    public double computeNQC(MsMarcoQuery q, TopDocs topDocs) {
+        return computeNQC(q.getQuery(), getRSVs(topDocs, this.k));
+    }
+
+    /**
+     * Version 2: explicit cutoff k (for special cases like CumulativeNQC)
+     */
+    public double computeNQC(MsMarcoQuery q, TopDocs topDocs, int k) {
+        return computeNQC(q.getQuery(), getRSVs(topDocs, k), k);
+    }
+
+    /** NEW: Base version to allow subclasses to override */
     public double computeNQC(Query q, double[] rsvs, int k) {
+        // default behavior: just ignore k and use the simpler version
+        rsvs = Arrays.stream(rsvs).limit(k).toArray();
+        return computeNQC(q, rsvs);
+    }
+
+    public double computeNQC(Query q, double[] rsvs) {
         rsvs = Arrays.stream(rsvs).limit(k).toArray();
 
         //double ref = new StandardDeviation().evaluate(rsvs);
@@ -45,13 +66,15 @@ public class NQCSpecificity extends BaseIDFSpecificity {
         return nqc * avgIDF; // high variance, high avgIDF -- more specificity
     }
 
-    public double computeNQC(Query q, RetrievedResults topDocs, int k) {
+    public double computeNQC(Query q, RetrievedResults topDocs) {
         return computeNQC(q, topDocs.getRSVs(k), k);
     }
 
-    public double computeNQC(MsMarcoQuery q, TopDocs topDocs, int k) {
-        return computeNQC(q.getQuery(), getRSVs(topDocs, k), k);
+/*
+    public double computeNQC(MsMarcoQuery q, TopDocs topDocs) {
+        return computeNQC(q.getQuery(), getRSVs(topDocs));
     }
+*/
 
     @Override
     public String name() {

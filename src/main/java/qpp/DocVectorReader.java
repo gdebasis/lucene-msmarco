@@ -7,7 +7,7 @@ import java.nio.channels.FileChannel;
 import java.util.*;
 
 public class DocVectorReader {
-    static final int VECTOR_DIM = 768;
+    static final int VECTOR_DIM = Constants.VECTOR_DIM;
     private static final int RECORD_SIZE = 4 + VECTOR_DIM * 4; // 4 for docId + 768 floats
     private final RandomAccessFile file;
     private final FileChannel channel;

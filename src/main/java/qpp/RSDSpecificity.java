@@ -12,12 +12,13 @@ import java.util.*;
 
 public class RSDSpecificity extends BaseQPPMethod {
     BaseIDFSpecificity qppMethod;
-
+    int k;
     static Random rnd = new Random(IndexUtils.SEED);
     static final int NUM_SAMPLES = 10;
 
-    public RSDSpecificity(BaseIDFSpecificity qppMethod) {
+    public RSDSpecificity(BaseIDFSpecificity qppMethod, int k) {
         this.qppMethod = qppMethod;
+        this.k=k;
     }
 
     TopDocs sampleTopDocs(TopDocs topDocs, int k) {
@@ -34,13 +35,25 @@ public class RSDSpecificity extends BaseQPPMethod {
         //---LUCENE_COMPATIBILITY
     }
 
+
+    // --- new: implement the interface’s no-k version ---
+    @Override
+    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs) {
+        // Default k if not specified
+//        int defaultK = 50;
+//        int defaultK = Math.min(50, topDocs.scoreDocs.length);length
+        return computeSpecificity(q, topDocs, this.k);
+    }
+
+
     @Override
     public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs, int k) {
         double avgRankSim = 0;
         //System.out.println("Estimating QPP for query " + q.getId());
         for (int i=0; i < NUM_SAMPLES; i++) {
             //System.out.println("Estimating over sample " + i);
-            TopDocs sampledTopDocs = sampleTopDocs(topDocs, Math.min(Constants.RLM_NUM_TOP_DOCS, topDocs.scoreDocs.length));
+            TopDocs sampledTopDocs = sampleTopDocs(topDocs, k);
+//            TopDocs sampledTopDocs = sampleTopDocs(topDocs, Math.min(Constants.RLM_NUM_TOP_DOCS, topDocs.scoreDocs.length));
             double qppEstimate = qppMethod.computeSpecificity(q, sampledTopDocs, k);
 
             double rankSim = OverlapStats.computeRBO(topDocs, sampledTopDocs);

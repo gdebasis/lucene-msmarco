@@ -21,25 +21,27 @@ public class VariantSpecificity extends NQCSpecificity {
     int numVariants;
     float lambda;
     boolean norlamiseScores;
+    int k;
 
     public VariantSpecificity(QPPMethod baseModel,
                               IndexSearcher searcher, KNNRelModel knnRelModel,
                               int numVariants,
                               float lambda) {
-        this(baseModel, searcher, knnRelModel, numVariants, lambda, false);
+        this(baseModel, searcher, knnRelModel, numVariants, lambda, false, 50);
     }
 
     public VariantSpecificity(QPPMethod baseModel,
                               IndexSearcher searcher, KNNRelModel knnRelModel,
                               int numVariants,
-                              float lambda, boolean normaliseScores) {
-        super(searcher);
+                              float lambda, boolean normaliseScores, int k) {
+        super(searcher, k);
 
         this.baseModel = baseModel;
         this.knnRelModel = knnRelModel;
         this.numVariants = numVariants;
         this.lambda = lambda;
         this.norlamiseScores = normaliseScores;
+//        this.k=k;
     }
 
     TopDocs normaliseScores(TopDocs topDocs) {
@@ -57,6 +59,11 @@ public class VariantSpecificity extends NQCSpecificity {
             sd.score = (sd.score - minScore)/diff;
 
         return new TopDocs(topDocs.totalHits, normalisedSDs);
+    }
+
+    @Override
+    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs) {
+        return computeSpecificity(q, topDocs, this.k);
     }
 
     @Override
@@ -108,7 +115,6 @@ public class VariantSpecificity extends NQCSpecificity {
 
     @Override
     public String name() {
-        return String.format("QV-JM-%s-%d-%.2f", baseModel.name(), numVariants, lambda);
+        return String.format("QV-JM-%s-%d-%.2f-k%d", baseModel.name(), numVariants, lambda, k);
     }
-
 }

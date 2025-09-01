@@ -6,7 +6,7 @@ import java.nio.channels.FileChannel;
 import java.util.*;
 
 public class QueryVecLoader {
-    private static final int VECTOR_DIM = 768;
+    private static final int VECTOR_DIM = Constants.VECTOR_DIM;
     private static final int RECORD_SIZE = 4 + VECTOR_DIM * 4;  // 4 bytes for int ID + 768 * 4 bytes for float vector
 
     public static Map<Integer, float[]> load(String path) throws IOException {

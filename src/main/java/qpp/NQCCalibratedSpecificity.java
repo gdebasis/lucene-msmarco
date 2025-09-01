@@ -12,12 +12,12 @@ import java.util.Arrays;
 public class NQCCalibratedSpecificity extends NQCSpecificity {
     float alpha, beta, gamma;
 
-    public NQCCalibratedSpecificity(IndexSearcher searcher) {
-        super(searcher);
+    public NQCCalibratedSpecificity(IndexSearcher searcher, int k) {
+        super(searcher, k);
     }
 
-    public NQCCalibratedSpecificity(IndexSearcher searcher, float alpha, float beta, float gamma) {
-        super(searcher);
+    public NQCCalibratedSpecificity(IndexSearcher searcher, float alpha, float beta, float gamma, int k) {
+        super(searcher, k);
         setParameters(alpha, beta, gamma);
     }
 

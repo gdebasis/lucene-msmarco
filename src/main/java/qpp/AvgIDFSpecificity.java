@@ -18,10 +18,17 @@ import java.util.Set;
 public class AvgIDFSpecificity extends BaseQPPMethod {
     IndexReader reader;
     IndexSearcher searcher;
+    int k;
 
-    public AvgIDFSpecificity(IndexSearcher searcher) {
+    public AvgIDFSpecificity(IndexSearcher searcher, int k) {
         this.searcher = searcher;
         this.reader = searcher.getIndexReader();
+        this.k=k;
+    }
+
+    @Override
+    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs) {
+        return computeSpecificity(q, topDocs, this.k);
     }
 
     public void writePermutationMap(List<MsMarcoQuery> queries, Map<String, TopDocs> topDocsMap, int sampleNumber) throws IOException {}

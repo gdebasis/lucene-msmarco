@@ -21,8 +21,8 @@ public class CoRelSpecificity extends VariantSpecificity {
     public CoRelSpecificity(QPPMethod baseModel,
                             IndexSearcher searcher, KNNRelModel knnRelModel,
                             int numVariants,
-                            float lambda, boolean normaliseScores) {
-        super(baseModel, searcher, knnRelModel, numVariants, lambda, normaliseScores);
+                            float lambda, boolean normaliseScores, int k) {
+        super(baseModel, searcher, knnRelModel, numVariants, lambda, normaliseScores, k);
     }
 
     @Override

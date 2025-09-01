@@ -16,19 +16,30 @@ import qrels.RetrievedResults;
 public abstract class BaseIDFSpecificity extends BaseQPPMethod {
     IndexReader reader;
     IndexSearcher searcher;
+    int k; //top-k cutoff
 
     public BaseIDFSpecificity() { }
 
-    public BaseIDFSpecificity(IndexSearcher searcher) {
+    public BaseIDFSpecificity(IndexSearcher searcher, int k) {
         this.searcher = searcher;
         this.reader = searcher.getIndexReader();
+        this.k=k;
+    }
+
+    // optional setter if you want to change k later
+    public void setK(int k) {
+        this.k = k;
+    }
+
+    public int getK() {
+        return this.k;
     }
 
     public void writePermutationMap(List<MsMarcoQuery> queries, Map<String, TopDocs> topDocsMap, int sampleNumber) throws IOException {}
     public void setDataSource(String dataFile) throws IOException { }
 
     @Override
-    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs, int k) {
+    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs) {
         double specificity = 0;
         try {
             specificity = maxIDF(q.getQuery());
@@ -39,7 +50,15 @@ public abstract class BaseIDFSpecificity extends BaseQPPMethod {
         return specificity;
     }
 
-    double[] getRSVs(TopDocs topDocs, int k) {
+    @Override
+    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs, int k) {
+        // update the field k for this call
+        this.k = k;
+        return computeSpecificity(q, topDocs);
+    }
+
+
+    protected double[] getRSVs(TopDocs topDocs) {
         return Arrays.stream(topDocs.scoreDocs)
                 .limit(k) // only on top-k
                 .map(scoreDoc -> scoreDoc.score)
@@ -47,7 +66,16 @@ public abstract class BaseIDFSpecificity extends BaseQPPMethod {
                 .toArray();
     }
 
-    double maxIDF(Query q) throws IOException {
+    protected double[] getRSVs(TopDocs topDocs, int k) {
+        return Arrays.stream(topDocs.scoreDocs)
+                .limit(k)
+                .map(scoreDoc -> scoreDoc.score)
+                .mapToDouble(d -> d)
+                .toArray();
+    }
+
+
+    protected double maxIDF(Query q) throws IOException {
         long N = reader.numDocs();
         Set<Term> qterms = new HashSet<>();
 

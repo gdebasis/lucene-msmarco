@@ -7,17 +7,17 @@ import retrieval.MsMarcoQuery;
 public class CumulativeNQC extends NQCSpecificity {
     public CumulativeNQC() {}
 
-    public CumulativeNQC(IndexSearcher searcher) {
-        super(searcher);
+    public CumulativeNQC(IndexSearcher searcher, int k) {
+        super(searcher, k);
     }
 
     @Override
-    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs, int k) {
+    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs) {
         double s = 0;
-        for (int i=1; i < k; i++) {
+        for (int i=1; i < this.k; i++) {
             s += computeNQC(q, topDocs, i);
         }
-        return s/k;
+        return s/this.k;
     }
 
     @Override

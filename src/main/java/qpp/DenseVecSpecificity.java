@@ -23,6 +23,11 @@ public class DenseVecSpecificity extends BaseIDFSpecificity {
     }
 
     @Override
+    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs) {
+        return computeSpecificity(q, topDocs, this.numTopDocs);
+    }
+
+    @Override
     public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs, int cutoff /* cutoff is not used here*/) {
         List<float[]> vecs = new ArrayList<>();
         float[] qvec = queryVecs.get(Integer.parseInt(q.getId()));

@@ -11,9 +11,15 @@ import java.util.Arrays;
 public class OddsRatioSpecificity extends BaseIDFSpecificity {
     float p;
 
-    public OddsRatioSpecificity(IndexSearcher searcher, float p) {
-        super(searcher);
+    public OddsRatioSpecificity(IndexSearcher searcher, float p, int k) {
+        super(searcher, k);
         this.p = p;
+    }
+
+    @Override
+    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs) {
+        // delegate to the k-version using the default `this.k`
+        return computeSpecificity(q, topDocs, this.k);
     }
 
     @Override
@@ -22,7 +28,7 @@ public class OddsRatioSpecificity extends BaseIDFSpecificity {
         int topK = (int)(p*k);
         int bottomK = topK;
 
-        double[] rsvs = getRSVs(topDocs, k);
+        double[] rsvs = getRSVs(topDocs);
         double avgIDF = 0;
         try {
             avgIDF = Arrays.stream(idfs(q.getQuery())).max().getAsDouble();
