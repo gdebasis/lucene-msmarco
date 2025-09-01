@@ -14,8 +14,9 @@ public class SMVSpecificity extends BaseIDFSpecificity {
         super(searcher, k);
     }
 
-    public double computeSMV(MsMarcoQuery q, TopDocs topDocs) {
-        return computeSMV(q.getQuery(), getRSVs(topDocs, topK));
+    @Override
+    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs) {
+        return computeSMV(q.getQuery(), getRSVs(topDocs, this.topK));
     }
 
     public double computeSMV(Query q, double[] rsvs) {
@@ -30,7 +31,7 @@ public class SMVSpecificity extends BaseIDFSpecificity {
         double smv = 0.0;
         for (double score : rsvs) {
             if (score > 0 && muHat > 0) {
-                smv += score * Math.abs(Math.log(score / muHat));
+                smv += score * Math.abs(Math.log(score/muHat));
             }
         }
         smv /= rsvs.length;
