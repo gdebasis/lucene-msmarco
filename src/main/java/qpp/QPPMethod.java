@@ -10,7 +10,6 @@ import java.util.Map;
 
 public interface QPPMethod {
     public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs);
-    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs, int k);
     public String name();
     public void setDataSource(String dataFile) throws IOException;
     public void writePermutationMap(List<MsMarcoQuery> queries, Map<String, TopDocs> topDocsMap, int sampleNumber) throws IOException;

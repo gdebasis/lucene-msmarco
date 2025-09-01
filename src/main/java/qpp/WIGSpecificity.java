@@ -3,7 +3,6 @@ package qpp;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TopDocs;
-import qrels.RetrievedResults;
 import retrieval.MsMarcoQuery;
 
 import java.util.Set;
@@ -16,12 +15,6 @@ public class WIGSpecificity extends BaseIDFSpecificity {
 
     @Override
     public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs) {
-        // delegate to the k-version using the default `this.k`
-        return computeSpecificity(q, topDocs, this.k);
-    }
-
-    @Override
-    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs, int k) {
         double avgIDF = 0;
         int numQueryTerms = 1;
         try {
@@ -42,7 +35,7 @@ public class WIGSpecificity extends BaseIDFSpecificity {
          */
 
         double[] rsvs = getRSVs(topDocs);
-        int cutoff = Math.min(k, rsvs.length);
+        int cutoff = Math.min(topK, rsvs.length);
 
         double wig = 0;
         for (int i = 0; i < cutoff; i++) {

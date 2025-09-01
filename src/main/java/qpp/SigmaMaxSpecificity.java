@@ -1,5 +1,6 @@
 package qpp;
 
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.ScoreDoc;
 import retrieval.MsMarcoQuery;
@@ -9,26 +10,18 @@ import java.util.List;
 import java.util.stream.DoubleStream;
 
 public class SigmaMaxSpecificity extends BaseQPPMethod {
+    int topK;
 
-    public SigmaMaxSpecificity() {
-        // no parameters needed
-    }
+    public SigmaMaxSpecificity(int topK) { this.topK = topK; }
 
     @Override
     public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs) {
-        int cutoff = (topDocs == null) ? 0 : topDocs.scoreDocs.length;
-        return computeSpecificity(q, topDocs, cutoff);
-    }
-
-
-    @Override
-    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs, int k) {
         if (topDocs == null || topDocs.scoreDocs.length == 0) {
             return 0.0;
         }
 
         // limit to cutoff k
-        int cutoff = Math.min(k, topDocs.scoreDocs.length);
+        int cutoff = Math.min(topK, topDocs.scoreDocs.length);
         List<Double> scores = new ArrayList<>();
         double maxStd = 0.0;
 
@@ -52,9 +45,9 @@ public class SigmaMaxSpecificity extends BaseQPPMethod {
         }
 
         // Normalize by sqrt(|q tokens|)
-        int numTerms = q.getQuery().toString().split("\\s+").length;
+        int numTerms = q.getQueryTerms().size();
         double norm = Math.sqrt(Math.max(1, numTerms)); // avoid /0
-        return maxStd / norm;
+        return maxStd/norm;
     }
 
     @Override

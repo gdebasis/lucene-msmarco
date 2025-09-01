@@ -1,9 +1,7 @@
 package qpp;
 
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TopDocs;
-import qrels.RetrievedResults;
 import retrieval.MsMarcoQuery;
 
 import java.util.Arrays;
@@ -18,14 +16,7 @@ public class OddsRatioSpecificity extends BaseIDFSpecificity {
 
     @Override
     public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs) {
-        // delegate to the k-version using the default `this.k`
-        return computeSpecificity(q, topDocs, this.k);
-    }
-
-    @Override
-    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs, int k) {
-        k = Math.min(k,topDocs.scoreDocs.length);
-        int topK = (int)(p*k);
+        int topK = (int)(p * Math.min(this.topK,topDocs.scoreDocs.length));
         int bottomK = topK;
 
         double[] rsvs = getRSVs(topDocs);
@@ -36,7 +27,7 @@ public class OddsRatioSpecificity extends BaseIDFSpecificity {
         catch (Exception ex) { ex.printStackTrace(); }
 
         double topAvg = Arrays.stream(rsvs).limit(topK).average().getAsDouble();
-        double bottomAvg = Arrays.stream(rsvs).skip(k-bottomK).average().getAsDouble();
+        double bottomAvg = Arrays.stream(rsvs).skip(topK-bottomK).average().getAsDouble();
         return topAvg/bottomAvg * avgIDF;
     }
 

@@ -14,10 +14,10 @@ public class CumulativeNQC extends NQCSpecificity {
     @Override
     public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs) {
         double s = 0;
-        for (int i=1; i < this.k; i++) {
+        for (int i = 1; i < this.topK; i++) {
             s += computeNQC(q, topDocs, i);
         }
-        return s/this.k;
+        return s/this.topK;
     }
 
     @Override

@@ -7,27 +7,21 @@ import retrieval.MsMarcoQuery;
 import java.util.Arrays;
 
 public class SigmaXSpecificity extends BaseQPPMethod {
+    int topK;
+    final double x;  // threshold parameter (e.g., 0.5 = 50%)
 
-    private final double x;  // threshold parameter (e.g., 0.5 = 50%)
-
-    public SigmaXSpecificity(double x) {
+    public SigmaXSpecificity(double x, int topK) {
         this.x = x;
+        this.topK = topK;
     }
 
-    // REQUIRED by QPPMethod
     @Override
     public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs) {
-        int cutoff = (topDocs == null) ? 0 : topDocs.scoreDocs.length;
-        return computeSpecificity(q, topDocs, cutoff);
-    }
-
-    @Override
-    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs, int k) {
-        if (topDocs == null || topDocs.scoreDocs.length == 0 || k <= 0) {
+        if (topDocs == null || topDocs.scoreDocs.length == 0) {
             return 0.0;
         }
 
-        int cutoff = Math.min(k, topDocs.scoreDocs.length);
+        int cutoff = Math.min(topK, topDocs.scoreDocs.length);
         float topScore = topDocs.scoreDocs[0].score;
 
         // collect scores >= x * topScore within cutoff
@@ -53,8 +47,7 @@ public class SigmaXSpecificity extends BaseQPPMethod {
 
         double sigma = Math.sqrt(variance);
 
-        // normalize by sqrt(|q tokens|)
-        int qlen = Math.max(1, q.getQuery().toString().split("\\s+").length);
+        int qlen = q.getQueryTerms().size();
         return sigma / Math.sqrt(qlen);
     }
 

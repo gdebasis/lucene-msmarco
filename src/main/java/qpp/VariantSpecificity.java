@@ -3,17 +3,11 @@ package qpp;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
-import qrels.ResultTuple;
-import qrels.RetrievedResults;
-import retrieval.Constants;
 import retrieval.KNNRelModel;
 import retrieval.MsMarcoQuery;
-import retrieval.TermDistribution;
 
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
 
 public class VariantSpecificity extends NQCSpecificity {
     QPPMethod baseModel;
@@ -21,27 +15,18 @@ public class VariantSpecificity extends NQCSpecificity {
     int numVariants;
     float lambda;
     boolean norlamiseScores;
-    int k;
 
     public VariantSpecificity(QPPMethod baseModel,
                               IndexSearcher searcher, KNNRelModel knnRelModel,
                               int numVariants,
-                              float lambda) {
-        this(baseModel, searcher, knnRelModel, numVariants, lambda, false, 50);
-    }
-
-    public VariantSpecificity(QPPMethod baseModel,
-                              IndexSearcher searcher, KNNRelModel knnRelModel,
-                              int numVariants,
-                              float lambda, boolean normaliseScores, int k) {
-        super(searcher, k);
+                              float lambda, boolean normaliseScores, int topK) {
+        super(searcher, topK);
 
         this.baseModel = baseModel;
         this.knnRelModel = knnRelModel;
         this.numVariants = numVariants;
         this.lambda = lambda;
         this.norlamiseScores = normaliseScores;
-//        this.k=k;
     }
 
     TopDocs normaliseScores(TopDocs topDocs) {
@@ -63,11 +48,6 @@ public class VariantSpecificity extends NQCSpecificity {
 
     @Override
     public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs) {
-        return computeSpecificity(q, topDocs, this.k);
-    }
-
-    @Override
-    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs, int k) {
         List<MsMarcoQuery> knnQueries = null;
         double variantSpec = 0;
 
@@ -79,14 +59,14 @@ public class VariantSpecificity extends NQCSpecificity {
                 knnQueries = knnRelModel.getKNNs(q, numVariants);
 
             if (knnQueries!=null && !knnQueries.isEmpty()) {
-                variantSpec = variantSpecificity(q, knnQueries, topDocs, k);
+                variantSpec = variantSpecificity(q, knnQueries, topDocs, topK);
             }
         }
         catch (Exception ex) { ex.printStackTrace(); }
 
         return knnQueries!=null?
-                lambda * variantSpec + (1-lambda) * baseModel.computeSpecificity(q, topDocs, k):
-                baseModel.computeSpecificity(q, topDocs, k);
+                lambda * variantSpec + (1-lambda) * baseModel.computeSpecificity(q, topDocs):
+                baseModel.computeSpecificity(q, topDocs);
     }
 
     double variantSpecificity(MsMarcoQuery q, List<MsMarcoQuery> knnQueries, TopDocs topDocs, int k) throws Exception {
@@ -103,18 +83,18 @@ public class VariantSpecificity extends NQCSpecificity {
             if (norlamiseScores)
                 topDocsRQ = normaliseScores(topDocsRQ);
 
-            variantSpecScore = baseModel.computeSpecificity(rq, topDocsRQ, k);
+            variantSpecScore = baseModel.computeSpecificity(rq, topDocsRQ);
             refSim = rq.getRefSim();
 
             specScore +=  refSim * variantSpecScore ;
             z += refSim;
         }
 
-        return z==0? baseModel.computeSpecificity(q, topDocs, k): specScore/z;
+        return z==0? baseModel.computeSpecificity(q, topDocs): specScore/z;
     }
 
     @Override
     public String name() {
-        return String.format("QV-JM-%s-%d-%.2f-k%d", baseModel.name(), numVariants, lambda, k);
+        return String.format("QV-JM-%s-%d-%.2f-k%d", baseModel.name(), numVariants, lambda, topK);
     }
 }

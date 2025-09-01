@@ -26,16 +26,11 @@ public class AvgIDFSpecificity extends BaseQPPMethod {
         this.k=k;
     }
 
-    @Override
-    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs) {
-        return computeSpecificity(q, topDocs, this.k);
-    }
-
     public void writePermutationMap(List<MsMarcoQuery> queries, Map<String, TopDocs> topDocsMap, int sampleNumber) throws IOException {}
     public void setDataSource(String dataFile) throws IOException { }
 
     @Override
-    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs, int k) {
+    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs) {
         double specificity = 0;
         try {
             specificity = averageIDF(q.getQuery());

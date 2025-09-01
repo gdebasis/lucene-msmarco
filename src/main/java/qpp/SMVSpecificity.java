@@ -10,31 +10,21 @@ import java.util.Arrays;
 
 public class SMVSpecificity extends BaseIDFSpecificity {
 
-    public SMVSpecificity() { }
-
     public SMVSpecificity(IndexSearcher searcher, int k) {
         super(searcher, k);
     }
 
-    @Override
-    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs) {
-        return computeSMV(q, topDocs, this.k);
+    public double computeSMV(MsMarcoQuery q, TopDocs topDocs) {
+        return computeSMV(q.getQuery(), getRSVs(topDocs, topK));
     }
 
-    public double computeSMV(MsMarcoQuery q, TopDocs topDocs, int k) {
-        return computeSMV(q.getQuery(), getRSVs(topDocs, k), k);
-    }
-
-    public double computeSMV(Query q, double[] rsvs, int k) {
+    public double computeSMV(Query q, double[] rsvs) {
         if (rsvs.length == 0) return 0.0;
 
         // limit to cutoff k
-        rsvs = Arrays.stream(rsvs).limit(k).toArray();
+        rsvs = Arrays.stream(rsvs).limit(topK).toArray();
 
         double muHat = Arrays.stream(rsvs).average().orElse(1.0);
-
-        // average score over all docs (Score(D))
-//        double scoreD = Arrays.stream(rsvs).average().orElse(1.0);
 
         double scoreD = 0;
         double smv = 0.0;
@@ -43,15 +33,13 @@ public class SMVSpecificity extends BaseIDFSpecificity {
                 smv += score * Math.abs(Math.log(score / muHat));
             }
         }
-        smv /= (double)rsvs.length;
+        smv /= rsvs.length;
         try {
             scoreD = reader!=null? Arrays.stream(idfs(q)).average().getAsDouble() : 1.0;
         }
         catch (IOException e) {
             e.printStackTrace();
         }
-//        smv /= (k * scoreD);  // normalization
-
         return smv *scoreD; // high variance, high avgIDF -- more specificity
     }
 

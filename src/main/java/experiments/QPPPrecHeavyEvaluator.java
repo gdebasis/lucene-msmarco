@@ -55,7 +55,7 @@ public class QPPPrecHeavyEvaluator {
 
         i = 0;
         for (MsMarcoQuery query: queries) {
-            qppEstimates[i++] = qppMethod.computeSpecificity(query, topDocsMap.get(query.getId()), 50);
+            qppEstimates[i++] = qppMethod.computeSpecificity(query, topDocsMap.get(query.getId()));
         }
 
         List<QPPMetricBundle> qPPMetricBundleList = new ArrayList<>();
@@ -107,7 +107,7 @@ public class QPPPrecHeavyEvaluator {
 
         i = 0;
         for (MsMarcoQuery query: queries) {
-            qppEstimates[i] = qppMethod.computeSpecificity(query, topDocsMap.get(query.getId()), 50);
+            qppEstimates[i] = qppMethod.computeSpecificity(query, topDocsMap.get(query.getId()));
             /*
             System.out.println(String.format(
                     "%s = %.4f, %s = %.4f",
@@ -157,8 +157,8 @@ public class QPPPrecHeavyEvaluator {
                 new NQCCalibratedSpecificity(retriever.getSearcher(), 0.8f, 0.1f, 0.1f, 50),
                 new NQCCalibratedSpecificity(retriever.getSearcher(), 0.1f, 0.8f, 0.1f, 50),
                 new NQCCalibratedSpecificity(retriever.getSearcher(), 0.1f, 0.1f, 0.8f, 50),
-                new RSDSpecificity(new NQCSpecificity(retriever.getSearcher(), 50), 50),
-                new UEFSpecificity(new NQCSpecificity(retriever.getSearcher(), 50), 50)
+                new RSDSpecificity(new NQCSpecificity(retriever.getSearcher(), 50)),
+                new UEFSpecificity(new NQCSpecificity(retriever.getSearcher(), 50))
         };
 
         queries = retriever.getQueryList();

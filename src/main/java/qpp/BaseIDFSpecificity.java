@@ -11,28 +11,17 @@ import retrieval.MsMarcoQuery;
 import java.io.IOException;
 import java.util.*;
 
-import qrels.RetrievedResults;
-
 public abstract class BaseIDFSpecificity extends BaseQPPMethod {
     IndexReader reader;
     IndexSearcher searcher;
-    int k; //top-k cutoff
+    int topK; //top-k cutoff
 
     public BaseIDFSpecificity() { }
 
     public BaseIDFSpecificity(IndexSearcher searcher, int k) {
         this.searcher = searcher;
         this.reader = searcher.getIndexReader();
-        this.k=k;
-    }
-
-    // optional setter if you want to change k later
-    public void setK(int k) {
-        this.k = k;
-    }
-
-    public int getK() {
-        return this.k;
+        this.topK = k;
     }
 
     public void writePermutationMap(List<MsMarcoQuery> queries, Map<String, TopDocs> topDocsMap, int sampleNumber) throws IOException {}
@@ -50,17 +39,9 @@ public abstract class BaseIDFSpecificity extends BaseQPPMethod {
         return specificity;
     }
 
-    @Override
-    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs, int k) {
-        // update the field k for this call
-        this.k = k;
-        return computeSpecificity(q, topDocs);
-    }
-
-
     protected double[] getRSVs(TopDocs topDocs) {
         return Arrays.stream(topDocs.scoreDocs)
-                .limit(k) // only on top-k
+                .limit(topK) // only on top-k
                 .map(scoreDoc -> scoreDoc.score)
                 .mapToDouble(d -> d)
                 .toArray();

@@ -96,7 +96,7 @@ public class StochasticQPPEvaluation {
         int i=0;
 
         for (MsMarcoQuery query: queries) {
-            qppEstimates[i++] = qppMethod.computeSpecificity(query, topDocsMapWithoutPerturbation.get(query.getId()), cutoff);
+            qppEstimates[i++] = qppMethod.computeSpecificity(query, topDocsMapWithoutPerturbation.get(query.getId()));
         }
         QPPMetricBundle qppMeasures = new QPPMetricBundle(targetMetrics, qppEstimates);
         return qppMeasures;
@@ -128,7 +128,7 @@ public class StochasticQPPEvaluation {
             String qid = query.getId();
             TopDocs permutedSample = topDocsMap.get(qid);
 
-            qppEstimates[i] = qppMethod.computeSpecificity(query, permutedSample, cutoff);
+            qppEstimates[i] = qppMethod.computeSpecificity(query, permutedSample);
 
             //System.out.println("After reranking: ");
             //showTopDocs(permutedSample);

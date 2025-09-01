@@ -53,7 +53,7 @@ public class QPPOnPreRetrievedStochasticResults {
             int query_index = 0;
             for (MsMarcoQuery query: preRetrievedResults.queries.values()) {
                 TopDocs topDocs = topDocsMap.get(query.getId());
-                qppEstimates[query_index] = qppMethod.computeSpecificity(query, topDocs, topDocs.scoreDocs.length);
+                qppEstimates[query_index] = qppMethod.computeSpecificity(query, topDocs);
                 evaluatedMetricValues[query_index] = targetMetric==Metric.AWRF?
                         preEvaluatedResults.compute(query.getId(), Metric.AWRF):
                         evaluator.compute(query.getId(), targetMetric);
@@ -101,7 +101,7 @@ public class QPPOnPreRetrievedStochasticResults {
             for (MsMarcoQuery query: preRetrievedResults.queries.values()) {
                 String qid = query.getId();
                 TopDocs permutedSample = topDocsMap.get(qid);
-                qppEstimates[query_index] = qppMethod.computeSpecificity(query, permutedSample, permutedSample.scoreDocs.length);
+                qppEstimates[query_index] = qppMethod.computeSpecificity(query, permutedSample);
                 evaluatedMetricValues[query_index] =
                         evaluatedMetricValues[query_index] = targetMetric==Metric.AWRF?
                                 preEvaluatedResults.compute(query.getId(), Metric.AWRF):
@@ -122,10 +122,10 @@ public class QPPOnPreRetrievedStochasticResults {
             IndexUtils.init(searcher);
 
             final QPPMethod[] qppMethods = {
-                    new NQCSpecificity(searcher, 50),
-                    new CumulativeNQC(searcher, 50),
-                    new RSDSpecificity(new NQCSpecificity(searcher, Constants.NQC_CUTOFF), 50),
-                    new UEFSpecificity(new NQCSpecificity(searcher, Constants.NQC_CUTOFF), 50)
+                    new NQCSpecificity(searcher, Constants.NQC_CUTOFF),
+                    new CumulativeNQC(searcher, Constants.NQC_CUTOFF),
+                    new RSDSpecificity(new NQCSpecificity(searcher, Constants.NQC_CUTOFF)),
+                    new UEFSpecificity(new NQCSpecificity(searcher, Constants.NQC_CUTOFF))
             };
 
             String[] resFiles = {

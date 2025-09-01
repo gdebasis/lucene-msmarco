@@ -34,7 +34,7 @@ public class TRECDLQPPEvaluatorWithGenVariants {
 
         double kendals = 0;
 
-        QPPMethod baseModel = baseQPPModelName.equals("nqc")? new NQCSpecificity(searcher, Constants.NQC_CUTOFF): new UEFSpecificity(new NQCSpecificity(searcher, Constants.NQC_CUTOFF), 50);
+        QPPMethod baseModel = baseQPPModelName.equals("nqc")? new NQCSpecificity(searcher, Constants.NQC_CUTOFF): new UEFSpecificity(new NQCSpecificity(searcher, Constants.NQC_CUTOFF));
         QPPMethod qppMethod = new VariantSpecificity(
                 baseModel,
                 searcher,
@@ -53,7 +53,7 @@ public class TRECDLQPPEvaluatorWithGenVariants {
             TopDocs topDocs = topDocsMap.get(query.getId());
 
             evaluatedMetricValues[i] = evaluator.compute(query.getId(), targetMetric);
-            qppEstimates[i] = (float) qppMethod.computeSpecificity(query, topDocs, Constants.QPP_NUM_TOPK);
+            qppEstimates[i] = (float) qppMethod.computeSpecificity(query, topDocs);
 
             //System.out.println(String.format("%s: AP = %.4f, QPP = %.4f", query.getId(), evaluatedMetricValues[i], qppEstimates[i]));
             i++;

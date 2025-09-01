@@ -26,19 +26,19 @@ public class CoRelSpecificity extends VariantSpecificity {
     }
 
     @Override
-    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs, int k) {
+    public double computeSpecificity(MsMarcoQuery q, TopDocs topDocs) {
         List<MsMarcoQuery> knnQueries = null;
         double variantSpec = 0, colRelSpec = 0;
         double qppScore = 0;
 
         try {
-            qppScore = lambda * super.computeSpecificity(q, topDocs, k);
+            qppScore = lambda * super.computeSpecificity(q, topDocs);
             if (numVariants > 0)
                 knnQueries = knnRelModel.getKNNs(q, numVariants);
 
             if (knnQueries != null) {
                 int numRelatedQueries = knnQueries.size();
-                colRelSpec = coRelsSpecificity(knnQueries.subList(0, Math.min(numVariants, numRelatedQueries)), k);
+                colRelSpec = coRelsSpecificity(knnQueries.subList(0, Math.min(numVariants, numRelatedQueries)));
                 qppScore += (1-lambda)*colRelSpec;
             }
         }
@@ -82,7 +82,7 @@ public class CoRelSpecificity extends VariantSpecificity {
     }
      */
 
-    double coRelsSpecificity(List<MsMarcoQuery> knnQueries, int k) throws Exception {
+    double coRelsSpecificity(List<MsMarcoQuery> knnQueries) throws Exception {
 
         int i = 1;
         double corelScore = 0, corelEstimate = 0, refSim;
@@ -101,7 +101,7 @@ public class CoRelSpecificity extends VariantSpecificity {
             if (norlamiseScores)
                 topQueries = normaliseScores(topQueries);
 
-            corelEstimate = baseModel.computeSpecificity(rq, null, k);
+            corelEstimate = baseModel.computeSpecificity(rq, null);
             refSim = rq.getRefSim();
 
             corelScore += refSim * corelEstimate;

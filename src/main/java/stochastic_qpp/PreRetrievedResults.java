@@ -49,7 +49,7 @@ public class PreRetrievedResults {
     public double runQPP(String qid, QPPMethod qppMethod) {
         MsMarcoQuery q = new MsMarcoQuery(qid, "");
         TopDocs topDocs = topDocsMap.get(qid);
-        return qppMethod.computeSpecificity(q, topDocs, topDocs.scoreDocs.length);
+        return qppMethod.computeSpecificity(q, topDocs);
     }
 }
 
