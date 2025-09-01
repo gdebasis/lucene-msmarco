@@ -7,6 +7,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.store.FSDirectory;
+import org.checkerframework.checker.units.qual.C;
 import qpp.*;
 import qrels.Evaluator;
 import qrels.Metric;
@@ -121,10 +122,10 @@ public class QPPOnPreRetrievedStochasticResults {
             IndexUtils.init(searcher);
 
             final QPPMethod[] qppMethods = {
-                    new NQCSpecificity(searcher),
-                    new CumulativeNQC(searcher),
-                    new RSDSpecificity(new NQCSpecificity(searcher)),
-                    new UEFSpecificity(new NQCSpecificity(searcher))
+                    new NQCSpecificity(searcher, 50),
+                    new CumulativeNQC(searcher, 50),
+                    new RSDSpecificity(new NQCSpecificity(searcher, Constants.NQC_CUTOFF), 50),
+                    new UEFSpecificity(new NQCSpecificity(searcher, Constants.NQC_CUTOFF), 50)
             };
 
             String[] resFiles = {

@@ -249,7 +249,7 @@ public class StochasticQPPEvaluation {
                 QPPMethod[] qppMethods = {
                         //new NQCSpecificity(stochasticQppEval.retriever.getSearcher()),
                         //new CumulativeNQC(stochasticQppEval.retriever.getSearcher()),
-                        new PreComputedPredictor("BERT-QPP", stochasticQppEval.topDocsMapWithoutPerturbation)
+                        new PreComputedPredictor("BERT-QPP", stochasticQppEval.topDocsMapWithoutPerturbation, Constants.NQC_CUTOFF)
                         //new RSDSpecificity(new NQCSpecificity(stochasticQppEval.retriever.getSearcher())),
                         //new UEFSpecificity(new NQCSpecificity(stochasticQppEval.retriever.getSearcher()))
                 };

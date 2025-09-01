@@ -86,8 +86,8 @@ public class QPPOnPreRetrievedResults {
 
             final Metric[] targetMetricNames = {Metric.AWRF, Metric.nDCG, Metric.AWRF_NDCG};
             final QPPMethod[] qppMethods = {
-                    new NQCSpecificity(searcher),
-                    new CumulativeNQC(searcher),
+                    new NQCSpecificity(searcher, 50),
+                    new CumulativeNQC(searcher, 50),
                     //new RSDSpecificity(new NQCSpecificity(searcher))
             };
 

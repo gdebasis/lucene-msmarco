@@ -31,12 +31,12 @@ public class SimpleQPPExperimentWorkflow {
 
         QPPMethod[] qppMethods = {
 //                new NQCSpecificity(retriever.getSearcher(), 100),
-//                new VariantSpecificity(
-//                        new NQCSpecificity(retriever.getSearcher(), 100),
-//                        retriever.getSearcher(),
-//                        new KNNRelModel(Constants.QRELS_TRAIN, Constants.QUERY_FILE_TEST, false),
-//                        5, 0.2f, false, 5
-//                ),
+                new VariantSpecificity(
+                        new NQCSpecificity(retriever.getSearcher(), 100),
+                        retriever.getSearcher(),
+                        new KNNRelModel(Constants.QRELS_TRAIN, Constants.QUERY_FILE_TEST, false),
+                        5, 0.2f, false, 5
+                ),
 //                new OddsRatioSpecificity(retriever.getSearcher(), 0.2f, 50),
 //                new WIGSpecificity(retriever.getSearcher(), 5),
 //                new NQCCalibratedSpecificity(retriever.getSearcher(), 0.33f, 0.33f, 0.33f, 50),
