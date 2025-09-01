@@ -47,7 +47,7 @@ public class TRECDLQPPEvaluator {
             Map<String, TopDocs> topDocsMap,
             float lambda, int numVariants, Metric targetMetric) {
 
-        QPPMethod baseModel = baseQPPModelName.equals("nqc")? new NQCSpecificity(searcher): new UEFSpecificity(new NQCSpecificity(searcher));
+        QPPMethod baseModel = baseQPPModelName.equals("nqc")? new NQCSpecificity(searcher, Constants.NQC_CUTOFF): new UEFSpecificity(new NQCSpecificity(searcher, Constants.NQC_CUTOFF), 50);
         QPPMethod qppMethod =
             //new CoRelSpecificity(
             new VariantSpecificity(
@@ -55,7 +55,7 @@ public class TRECDLQPPEvaluator {
                 searcher,
                 knnRelModel,
                 numVariants,
-                lambda, Constants.NORMALISE_SCORES
+                lambda, Constants.NORMALISE_SCORES,Constants.NQC_CUTOFF
         );
 
         int numQueries = queries.size();

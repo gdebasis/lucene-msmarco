@@ -34,13 +34,13 @@ public class TRECDLQPPEvaluatorWithGenVariants {
 
         double kendals = 0;
 
-        QPPMethod baseModel = baseQPPModelName.equals("nqc")? new NQCSpecificity(searcher): new UEFSpecificity(new NQCSpecificity(searcher));
+        QPPMethod baseModel = baseQPPModelName.equals("nqc")? new NQCSpecificity(searcher, Constants.NQC_CUTOFF): new UEFSpecificity(new NQCSpecificity(searcher, Constants.NQC_CUTOFF), 50);
         QPPMethod qppMethod = new VariantSpecificity(
                 baseModel,
                 searcher,
                 knnRelModel,
                 numVariants,
-                lambda, Constants.NORMALISE_SCORES
+                lambda, Constants.NORMALISE_SCORES, Constants.NQC_CUTOFF
         );
 
         int numQueries = queries.size();

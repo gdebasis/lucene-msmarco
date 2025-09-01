@@ -40,9 +40,9 @@ public class SettingsLoader {
 
         qppMethods = new HashMap<>();
 
-        qppMethods.put("avgidf", new AvgIDFSpecificity(searcher));
-        qppMethods.put("nqc", new NQCSpecificity(searcher));
-        qppMethods.put("uef_nqc", new UEFSpecificity(new NQCSpecificity(searcher)));
+        qppMethods.put("avgidf", new AvgIDFSpecificity(searcher, qppTopK));
+        qppMethods.put("nqc", new NQCSpecificity(searcher, qppTopK));
+        qppMethods.put("uef_nqc", new UEFSpecificity(new NQCSpecificity(searcher, qppTopK), 50));
 
         qppTopK = Integer.parseInt(prop.getProperty("qpp.numtopdocs"));
 

@@ -27,8 +27,16 @@ public class QPPOnPreRetrievedResults {
         if (args.length < 2) {
             System.err.println("Arguments expected: <query file> <TREC formatted res file>");
             args = new String[3];
-            args[0] = Constants.QUERIES_DL20;
-            args[1] = "../pyqppeval/data/runs/2020/BM25.2020.res";
+            args[0] = Constants.QUERIES_DL1920;
+            args[1] =
+//                    "data/runs/1920/dense_qpp_another_calculation/BM25.1920.100.res";
+//            "data/runs/1920/dense_qpp_another_calculation/colbert.e2e.100.res";
+//            "data/runs/1920/dense_qpp_another_calculation/e5_dl_1920.100.res";
+//            "data/runs/1920/dense_qpp_another_calculation/monot5.100.res";
+//            "data/runs/1920/dense_qpp_another_calculation/prf_rank_beta05.1920.100.res";
+//            "data/runs/1920/dense_qpp_another_calculation/prf_rerank_beta05.1920.100.res";
+//            "data/runs/1920/dense_qpp_another_calculation/rm3.100.res";
+            "data/runs/1920/dense_qpp_another_calculation/splade.100.res";
             //args[2] = Constants.QRELS_DL20;
         }
 
@@ -54,24 +62,27 @@ public class QPPOnPreRetrievedResults {
         BufferedWriter bw = new BufferedWriter(new FileWriter(resFile + ".qpp"));
 
         DocVectorReader denseVecReader =
-                new DocVectorReader(Constants.COLL_DENSEVEC_FILE_CONTRIEVER);
-        Map<Integer, float[]> queryVecs = QueryVecLoader.load(Constants.DL20_CONTRIEVER_VECS);
+                new DocVectorReader(Constants.COLL_DENSEVEC_FILE_mnli);
+        Map<Integer, float[]> queryVecs = QueryVecLoader.load(Constants.DL1920_mnli_VECS);
 
         final QPPMethod[] qppMethods = {
-                new NQCSpecificity(searcher),
-                new UEFSpecificity(new NQCSpecificity(searcher)),
-                new RSDSpecificity(new NQCSpecificity(searcher)),
-                new OddsRatioSpecificity(searcher, 0.4f),
-                new WIGSpecificity(searcher),
-                new NQCCalibratedSpecificity(searcher, 0.33f, 0.33f, 0.33f),
-                new VariantSpecificity(
-                        new NQCSpecificity(searcher),
-                        searcher,
-                        new KNNRelModel(Constants.QRELS_TRAIN, Constants.QUERY_FILE_TEST, false),
-                        5, 0.2f
-                ),
-                new DenseVecSpecificity(denseVecReader, queryVecs, Constants.DENSEQPP_NUM_TOP_DOCS),
-                new DenseVecMatryoskaSpecificity(denseVecReader, queryVecs, Constants.DENSEQPP_NUM_TOP_DOCS)
+                new NQCSpecificity(searcher, 100),
+                new UEFSpecificity(new NQCSpecificity(searcher, 100), 100),
+                new RSDSpecificity(new NQCSpecificity(searcher, 100), 100),
+                new OddsRatioSpecificity(searcher, 0.2f, 50),  // QPP-PRP
+                new WIGSpecificity(searcher, 5),
+                new NQCCalibratedSpecificity(searcher, 0.33f, 0.33f, 0.33f, 100),
+//                new VariantSpecificity(
+//                        new NQCSpecificity(searcher, 50),
+//                        searcher,
+//                        new KNNRelModel(Constants.QRELS_TRAIN, Constants.QUERY_FILE_TEST, false),
+//                        5, 0.2f,false, 50
+//                ),
+//                new DenseVecSpecificity(denseVecReader, queryVecs, Constants.DENSEQPP_NUM_TOP_DOCS),
+                new DenseVecMatryoskaSpecificity(denseVecReader, queryVecs, Constants.DENSEQPP_NUM_TOP_DOCS),
+                new SMVSpecificity(searcher, 50),    // SMV (needs searcher + k)
+                new SigmaMaxSpecificity(),
+                new SigmaXSpecificity(0.5),
         };
 
         double[][] qppScores = new double[qppMethods.length][queryMap.values().size()];
@@ -87,10 +98,13 @@ public class QPPOnPreRetrievedResults {
 
             // int qppMethodIndex = 0;
             for (QPPMethod qppMethod : qppMethods) {
+//                float qppEstimate = (float) qppMethod.computeSpecificity(
+//                        queryMap.get(qid),
+//                        allRetrievedResults.castToTopDocs(qid),
+//                        Constants.QPP_NUM_TOPK);
                 float qppEstimate = (float) qppMethod.computeSpecificity(
                         queryMap.get(qid),
-                        allRetrievedResults.castToTopDocs(qid),
-                        Constants.QPP_NUM_TOPK);
+                        allRetrievedResults.castToTopDocs(qid));
                 //qppScores[qppMethodIndex++][queryIndex] = qppEstimate;
                 sb.append(qppEstimate).append("\t");
             }

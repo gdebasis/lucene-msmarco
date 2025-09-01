@@ -132,33 +132,33 @@ public class QPPPrecHeavyEvaluator {
         OneStepRetriever retriever = new OneStepRetriever(Constants.QUERY_FILE_TEST, resFile, "english");
 
         QPPMethod[] qppMethods = {
-                new NQCSpecificity(retriever.getSearcher()),
+                new NQCSpecificity(retriever.getSearcher(), 50),
                 new VariantSpecificity(
-                        new NQCSpecificity(retriever.getSearcher()),
+                        new NQCSpecificity(retriever.getSearcher(), 50),
                         retriever.getSearcher(),
                         new KNNRelModel(Constants.QRELS_TRAIN, Constants.QUERY_FILE_TEST, false),
-                        5, 0.5f
+                        5, 0.5f, false, 50
                 ),
                 new VariantSpecificity(
-                        new NQCSpecificity(retriever.getSearcher()),
+                        new NQCSpecificity(retriever.getSearcher(), 50),
                         retriever.getSearcher(),
                         new KNNRelModel(Constants.QRELS_TRAIN, Constants.QUERY_FILE_TEST, false),
-                        5, 0.2f
+                        5, 0.2f, false, 50
                 ),
                 new VariantSpecificity(
-                        new NQCSpecificity(retriever.getSearcher()),
+                        new NQCSpecificity(retriever.getSearcher(), 50),
                         retriever.getSearcher(),
                         new KNNRelModel(Constants.QRELS_TRAIN, Constants.QUERY_FILE_TEST, false),
-                        5, 0.8f
+                        5, 0.8f,false,  50
                 ),
-                new OddsRatioSpecificity(retriever.getSearcher(), 0.4f),
-                new WIGSpecificity(retriever.getSearcher()),
-                new NQCCalibratedSpecificity(retriever.getSearcher(), 0.33f, 0.33f, 0.33f),
-                new NQCCalibratedSpecificity(retriever.getSearcher(), 0.8f, 0.1f, 0.1f),
-                new NQCCalibratedSpecificity(retriever.getSearcher(), 0.1f, 0.8f, 0.1f),
-                new NQCCalibratedSpecificity(retriever.getSearcher(), 0.1f, 0.1f, 0.8f),
-                new RSDSpecificity(new NQCSpecificity(retriever.getSearcher())),
-                new UEFSpecificity(new NQCSpecificity(retriever.getSearcher()))
+                new OddsRatioSpecificity(retriever.getSearcher(), 0.4f, 50),
+                new WIGSpecificity(retriever.getSearcher(), 50),
+                new NQCCalibratedSpecificity(retriever.getSearcher(), 0.33f, 0.33f, 0.33f, 50),
+                new NQCCalibratedSpecificity(retriever.getSearcher(), 0.8f, 0.1f, 0.1f, 50),
+                new NQCCalibratedSpecificity(retriever.getSearcher(), 0.1f, 0.8f, 0.1f, 50),
+                new NQCCalibratedSpecificity(retriever.getSearcher(), 0.1f, 0.1f, 0.8f, 50),
+                new RSDSpecificity(new NQCSpecificity(retriever.getSearcher(), 50), 50),
+                new UEFSpecificity(new NQCSpecificity(retriever.getSearcher(), 50), 50)
         };
 
         queries = retriever.getQueryList();

@@ -21,22 +21,32 @@ public class SimpleQPPExperimentWorkflow {
 
     public static void main(String[] args) throws Exception {
         List<MsMarcoQuery> queries;
-        final String resFile = "pass_2019.queries.res";
+        final String resFile = "data/runs/1920/dense_qpp_another_calculation/colbert.e2e.100.res";
+//                "data/runs/1920/trecdl1920.colbert-e2e.100.res";
         OneStepRetriever retriever = new OneStepRetriever(Constants.QUERY_FILE_TEST, resFile, "english");
 
+//        DocVectorReader denseVecReader =
+//                new DocVectorReader(Constants.COLL_DENSEVEC_FILE_mnli);
+//        Map<Integer, float[]> queryVecs = QueryVecLoader.load(Constants.DL1920_mnli_VECS);
+
         QPPMethod[] qppMethods = {
-                new NQCSpecificity(retriever.getSearcher()),
+//                new NQCSpecificity(retriever.getSearcher(), 100),
 //                new VariantSpecificity(
-//                        new NQCSpecificity(retriever.getSearcher()),
+//                        new NQCSpecificity(retriever.getSearcher(), 100),
 //                        retriever.getSearcher(),
 //                        new KNNRelModel(Constants.QRELS_TRAIN, Constants.QUERY_FILE_TEST, false),
-//                        5, 0.2f
+//                        5, 0.2f, false, 5
 //                ),
-                new OddsRatioSpecificity(retriever.getSearcher(), 0.6f),
-                //new WIGSpecificity(retriever.getSearcher()),
-                //new NQCCalibratedSpecificity(retriever.getSearcher(), 0.33f, 0.33f, 0.33f),
-                //new RSDSpecificity(new NQCSpecificity(retriever.getSearcher())),
-                //new UEFSpecificity(new NQCSpecificity(retriever.getSearcher()))
+//                new OddsRatioSpecificity(retriever.getSearcher(), 0.2f, 50),
+//                new WIGSpecificity(retriever.getSearcher(), 5),
+//                new NQCCalibratedSpecificity(retriever.getSearcher(), 0.33f, 0.33f, 0.33f, 50),
+//                new RSDSpecificity(new NQCSpecificity(retriever.getSearcher(), 100), 50),
+//                new UEFSpecificity(new NQCSpecificity(retriever.getSearcher(), 100), 20),
+//                new DenseVecSpecificity(denseVecReader, queryVecs, 30),
+//                new DenseVecMatryoskaSpecificity(denseVecReader, queryVecs, 3),
+//                new SMVSpecificity(retriever.getSearcher(), 100),    // SMV (needs searcher + k)
+//                new SigmaMaxSpecificity(),
+//                new SigmaXSpecificity(0.1),                         //SigmaX with threshold (e.g. 0.5)
         };
 
         queries = retriever.getQueryList();
@@ -52,7 +62,8 @@ public class SimpleQPPExperimentWorkflow {
             Map<String, TopDocs> topDocsMap = evaluator.getAllRetrievedResults().castToTopDocs();
             List<Double> qppEstimates = new ArrayList<>();
             for (MsMarcoQuery query : queries) {
-                qppEstimates.add(qppMethod.computeSpecificity(query, topDocsMap.get(query.getId()), 50));
+                qppEstimates.add(qppMethod.computeSpecificity(query, topDocsMap.get(query.getId())));
+//                qppEstimates.add(qppMethod.computeSpecificity(query, topDocsMap.get(query.getId()), 50));
             }
 
             double tau = new KendalCorrelation().correlation(
