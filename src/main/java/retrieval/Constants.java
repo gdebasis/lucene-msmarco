@@ -11,17 +11,23 @@ public interface Constants {
     String TREC_FAIR_IR_INDEX = "/Users/debasis/research/fair_ir/index";
     String TREC_FAIR_IR_QUERY_FILE = "fair_ir/topics.tsv";
     String TREC_FAIR_IR_QRELS_FILE = "/Users/debasis/research/supervised-rlm/fair_ir/qrels.txt";
-    String MSMARCO_COLL = "data/collection.tsv";
-    String MSMARCO_INDEX = "index/";
-    String MSMARCO_QUERY_INDEX = "query_index/";
+    String MSMARCO_COLL = "collection_msmarco_passage/collection.tsv";
+//            "data/msmarco/queries/queries.train.tsv";
+//            "collection_msmarco_passage/collection.tsv";
+    String MSMARCO_INDEX = "index/msmarco_index_pass_again/";
+//        "index/msmarco_query_tr/";
+//        "index/msmarco_index_pass_again/";
+    String MSMARCO_QUERY_INDEX = "index/msmarco_query_tr/";
     String QRELS_TRAIN = "data/qrels.train.tsv";
     String QUERY_FILE_TRAIN = "data/queries.train.tsv";
     String STOP_FILE = "stop.txt";
     String FEWSHOT_JSON = "fewshot.json";
-    String QUERY_FILE_TEST = "data/trecdl/pass_2019.queries";
+//    String QUERY_FILE_TEST = "data/trecdl/pass_2020.queries";
+    String QUERY_FILE_TEST = "data/trecdl/trecdl1920.queries";
     //String QUERY_FILE_TEST = "data/fever.tsv";
     //String QUERY_FILE_TEST = "data/queries.dev.small.tsv";
-    String QRELS_TEST = "data/trecdl/pass_2019.qrels";
+//    String QRELS_TEST = "data/trecdl/pass_2020.qrels";
+    String QRELS_TEST = "data/trecdl/trecdl1920.qrels";
     String RES_FILE = "ColBERT-PRF-VirtualAppendix/BM25/BM25.2019.res";
     String RES_FILE_RERANKED = "res_rlm.txt";
     String SAVED_MODEL = "model.tsv";
@@ -92,6 +98,16 @@ public interface Constants {
     String COLL_DENSEVEC_FILE_CONTRIEVER = "denseqpp/corpus_contriever_mean_embeddings_from_faiss.bin";
     String DL19_CONTRIEVER_VECS = "denseqpp/trecdl2019_contriever_msmarco_mean_embeddings.bin";
     String DL20_CONTRIEVER_VECS = "denseqpp/trecdl2020_contriever_msmarco_mean_embeddings.bin";
+
+    String DL1920_CONTRIEVER_VECS = "denseqpp/trecdl1920_contriever_msmarco_mean_embeddings.bin";
+
+    String COLL_DENSEVEC_FILE_mnli = "denseqpp/msmarco_corpus_miniLMv2_mean_embeddings.bin";
+    String DL19_mnli_VECS = "denseqpp/trecdl2019_contriever_msmarco_mean_embeddings.bin";
+    String DL20_mnli_VECS = "denseqpp/trecdl2020_contriever_msmarco_mean_embeddings.bin";
+
+    String DL1920_mnli_VECS = "denseqpp/trecdl1920_miniLMv2_msmarco_mean_embeddings.bin";
     int RECORCDS_PER_CHUNK = 10_000;
     int DENSEQPP_NUM_TOP_DOCS = 5;
+    int NQC_CUTOFF=50;
+    int VECTOR_DIM=384;
 }
