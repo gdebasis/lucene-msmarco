@@ -36,7 +36,7 @@ public class QPPOnPreRetrievedResults {
 //            "data/runs/1920/dense_qpp_another_calculation/prf_rank_beta05.1920.100.res";
 //            "data/runs/1920/dense_qpp_another_calculation/prf_rerank_beta05.1920.100.res";
 //            "data/runs/1920/dense_qpp_another_calculation/rm3.100.res";
-            "data/runs/1920/dense_qpp_another_calculation/splade.100.res";
+            "data/runs/1920/qppres/splade.100.res";
             //args[2] = Constants.QRELS_DL20;
         }
 
@@ -72,14 +72,14 @@ public class QPPOnPreRetrievedResults {
                 new OddsRatioSpecificity(searcher, 0.2f, 50),  // QPP-PRP
                 new WIGSpecificity(searcher, 5),
                 new NQCCalibratedSpecificity(searcher, 0.33f, 0.33f, 0.33f, 100),
-//                new VariantSpecificity(
-//                        new NQCSpecificity(searcher, 50),
-//                        searcher,
-//                        new KNNRelModel(Constants.QRELS_TRAIN, Constants.QUERY_FILE_TEST, false),
-//                        5, 0.2f,false, 50
-//                ),
-//                new DenseVecSpecificity(denseVecReader, queryVecs, Constants.DENSEQPP_NUM_TOP_DOCS),
-                new DenseVecMatryoskaSpecificity(denseVecReader, queryVecs, Constants.DENSEQPP_NUM_TOP_DOCS),
+                new VariantSpecificity(
+                        new NQCSpecificity(searcher, 50),
+                        searcher,
+                        new KNNRelModel(Constants.QRELS_TRAIN, Constants.QUERY_FILE_TEST, false),
+                        5, 0.2f,false, 50
+                ),
+                new DenseVecSpecificity(denseVecReader, queryVecs, Constants.DENSEQPP_NUM_TOP_DOCS),
+                //new DenseVecMatryoskaSpecificity(denseVecReader, queryVecs, Constants.DENSEQPP_NUM_TOP_DOCS),
                 new SMVSpecificity(searcher, 50),    // SMV (needs searcher + k)
                 new SigmaMaxSpecificity(50),
                 new SigmaXSpecificity(0.5, 50),

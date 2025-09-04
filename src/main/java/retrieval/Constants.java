@@ -81,8 +81,8 @@ public interface Constants {
     //String BM25_Top100_DL1920 = "stochastic-qpp/trecdl1920.bm25.res";
     //String ColBERT_Top100_DL1920 = "stochastic-qpp/trecdl1920.colbert-e2e.res";
 
-    String BM25_Top100_DL1920 = "data/runs/1920/dense_qpp_another_calculation/BM25.1920.100.res";
-    String ColBERT_Top100_DL1920 = "data/runs/1920/dense_qpp_another_calculation/colbert.e2e.100.res";
+    String BM25_Top100_DL1920 = "data/runs/1920/qppres/BM25.1920.100.res";
+    String ColBERT_Top100_DL1920 = "data/runs/1920/qppres/colbert.e2e.100.res";
 
     boolean AUTO_SORT_TOP_DOCS = true;
     boolean ALLOW_UNSORTED_TOPDOCS = true;

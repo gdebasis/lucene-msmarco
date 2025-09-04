@@ -56,7 +56,7 @@ public class SimpleQPPExperimentWorkflow {
         Evaluator evaluator = new Evaluator(Constants.QRELS_TEST, resFile, IR_MEASURE_CUTOFF); // Metrics for top-100 (P@10 is still at 10)
         List<Double> evaluatedMetricValues = new ArrayList<>();
         for (MsMarcoQuery query: queries) {
-            evaluatedMetricValues.add(evaluator.compute(query.getId(), Metric.RR));
+            evaluatedMetricValues.add(evaluator.compute(query.getId(), Metric.P_10));
         }
 
         for (QPPMethod qppMethod: qppMethods) {
