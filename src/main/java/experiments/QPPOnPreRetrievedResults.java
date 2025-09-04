@@ -66,12 +66,12 @@ public class QPPOnPreRetrievedResults {
         Map<Integer, float[]> queryVecs = QueryVecLoader.load(Constants.DL1920_CONTRIEVER_VECS);
 
         final QPPMethod[] qppMethods = {
-                new NQCSpecificity(searcher, 100),
-                new UEFSpecificity(new NQCSpecificity(searcher, 100)),
-                new RSDSpecificity(new NQCSpecificity(searcher, 100)),
+                new NQCSpecificity(searcher, 50),
+                new UEFSpecificity(new NQCSpecificity(searcher, 50)),
+                new RSDSpecificity(new NQCSpecificity(searcher, 50)),
                 new OddsRatioSpecificity(searcher, 0.2f, 50),  // QPP-PRP
                 new WIGSpecificity(searcher, 5),
-                new NQCCalibratedSpecificity(searcher, 0.33f, 0.33f, 0.33f, 100),
+                new NQCCalibratedSpecificity(searcher, 0.33f, 0.33f, 0.33f, 50),
                 new VariantSpecificity(
                         new NQCSpecificity(searcher, 50),
                         searcher,
