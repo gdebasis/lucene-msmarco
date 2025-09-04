@@ -78,8 +78,12 @@ public interface Constants {
     String QUERIES_MSMARCO_TRAIN = "data/queries.train.tsv";
 
     //String QUERIES_DL1920 = "data/trecdl/pass_2019.queries.small"; // for unit test
-    String BM25_Top100_DL1920 = "stochastic-qpp/trecdl1920.bm25.res";
-    String ColBERT_Top100_DL1920 = "stochastic-qpp/trecdl1920.colbert-e2e.res";
+    //String BM25_Top100_DL1920 = "stochastic-qpp/trecdl1920.bm25.res";
+    //String ColBERT_Top100_DL1920 = "stochastic-qpp/trecdl1920.colbert-e2e.res";
+
+    String BM25_Top100_DL1920 = "data/runs/1920/dense_qpp_another_calculation/BM25.1920.100.res";
+    String ColBERT_Top100_DL1920 = "data/runs/1920/dense_qpp_another_calculation/colbert.e2e.100.res";
+
     boolean AUTO_SORT_TOP_DOCS = true;
     boolean ALLOW_UNSORTED_TOPDOCS = true;
 

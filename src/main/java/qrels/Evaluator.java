@@ -31,8 +31,8 @@ public class Evaluator {
 
     public Evaluator(String qrelsFile, String resFile, int numTopDocs) throws Exception {
         relRcds = new AllRelRcds(qrelsFile);
-        retRcds = new AllRetrievedResults(resFile, numTopDocs);
-        fillRelInfo();
+        retRcds = new AllRetrievedResults(resFile);
+        fillRelInfo(numTopDocs);
     }
 
     public Evaluator(String qrelsFile, Map<String, TopDocs> topDocsMap) {
@@ -82,6 +82,10 @@ public class Evaluator {
 
     void fillRelInfo() {
         retRcds.fillRelInfo(relRcds);
+    }
+
+    void fillRelInfo(int numTopDocs) {
+        retRcds.fillRelInfo(relRcds, numTopDocs);
     }
 
     public String computeAll() {

@@ -164,6 +164,18 @@ public class AllRetrievedResults {
         this.allRelInfo = relInfo;
     }
 
+    public void fillRelInfo(AllRelRcds relInfo, int cutoff) {
+        for (Map.Entry<String, RetrievedResults> e : allRetMap.entrySet()) {
+            RetrievedResults res = e.getValue();
+            res.rtuples = res.rtuples.stream().limit(cutoff).collect(Collectors.toList());
+            PerQueryRelDocs thisRelInfo = relInfo.getRelInfo(String.valueOf(res.qid));
+            if (thisRelInfo != null)
+                res.fillRelInfo(thisRelInfo);
+        }
+        this.allRelInfo = relInfo;
+    }
+
+
     public TopDocs castToTopDocs(String qid) {
         List<ScoreDoc> scoreDocs = new ArrayList<>();
         RetrievedResults rr = allRetMap.get(qid);
