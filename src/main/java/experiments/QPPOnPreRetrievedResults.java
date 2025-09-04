@@ -3,6 +3,7 @@ import correlation.KendalCorrelation;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.store.FSDirectory;
 import qpp.*;
@@ -76,16 +77,25 @@ public class QPPOnPreRetrievedResults {
 
         int count = 0;
         for (String qid: allRetrievedResults.queries()) {
+
             if (count++ % 5 == 0)
                 System.out.print(String.format("QPP completed for %d queries\r", count));
+
+            MsMarcoQuery query = queryMap.get(qid);
+            if (query==null)
+                continue;
+
+            TopDocs topDocs = allRetrievedResults.castToTopDocs(qid);
+            if (topDocs==null || topDocs.scoreDocs.length==0)
+                continue;
 
             StringBuilder sb = new StringBuilder();
             sb.append(qid).append("\t");
 
             for (QPPMethod qppMethod : qppMethods) {
                 float qppEstimate = (float) qppMethod.computeSpecificity(
-                        queryMap.get(qid),
-                        allRetrievedResults.castToTopDocs(qid));
+                        query,
+                        topDocs);
                 sb.append(qppEstimate).append("\t");
             }
 
