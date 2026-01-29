@@ -8,6 +8,7 @@ import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TopDocs;
 import retrieval.MsMarcoQuery;
 import qrels.*;
+import utils.IndexUtils;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -46,9 +47,11 @@ public class AvgIDFSpecificity extends BaseQPPMethod {
         Set<Term> qterms = new HashSet<>();
         //+++LUCENE_COMPATIBILITY: Sad there's no #ifdef like C!
         // 8.x CODE
-        q.createWeight(searcher, ScoreMode.COMPLETE, 1).extractTerms(qterms);
+        //q.createWeight(searcher, ScoreMode.COMPLETE, 1).extractTerms(qterms);
         // 5.x code
         //q.createWeight(searcher, false).extractTerms(qterms);
+        // 9.x code
+        IndexUtils.collectTerms(q, qterms);
         //---LUCENE_COMPATIBILITY
 
         float aggregated_idf = 0;

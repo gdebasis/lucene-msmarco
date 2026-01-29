@@ -2,6 +2,9 @@ package experiments;
 
 import correlation.KendalCorrelation;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.similarities.BM25Similarity;
+import org.apache.lucene.search.similarities.LMDirichletSimilarity;
+import org.apache.lucene.search.similarities.LMJelinekMercerSimilarity;
 import qpp.*;
 import qrels.Evaluator;
 import qrels.Metric;
@@ -15,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 public class SimpleQPPExperimentWorkflow {
-    static final int IR_MEASURE_CUTOFF = 10;
+    static final int IR_MEASURE_CUTOFF = 100;
 
     public static void main(String[] args) throws Exception {
         List<MsMarcoQuery> queries;
@@ -24,12 +27,13 @@ public class SimpleQPPExperimentWorkflow {
 
         OneStepRetriever retriever = new OneStepRetriever(Constants.QUERIES_DL1920, resFile, "english");
 
-        DocVectorReader denseVecReader =
-                new DocVectorReader(Constants.COLL_DENSEVEC_FILE_CONTRIEVER);
-        Map<Integer, float[]> queryVecs = QueryVecLoader.load(Constants.DL1920_CONTRIEVER_VECS);
+        //DocVectorReader denseVecReader =
+        //        new DocVectorReader(Constants.COLL_DENSEVEC_FILE_CONTRIEVER);
+        //Map<Integer, float[]> queryVecs = QueryVecLoader.load(Constants.DL1920_CONTRIEVER_VECS);
 
         QPPMethod[] qppMethods = {
                 new NQCSpecificity(retriever.getSearcher(), 50),
+                new SubspaceVectorNQC(retriever.getSearcher(), new BM25Similarity(), 50, true),
 //                new VariantSpecificity(
 //                        new NQCSpecificity(retriever.getSearcher(), 100),
 //                        retriever.getSearcher(),
@@ -56,7 +60,7 @@ public class SimpleQPPExperimentWorkflow {
         Evaluator evaluator = new Evaluator(Constants.QRELS_TEST, resFile, IR_MEASURE_CUTOFF); // Metrics for top-100 (P@10 is still at 10)
         List<Double> evaluatedMetricValues = new ArrayList<>();
         for (MsMarcoQuery query: queries) {
-            evaluatedMetricValues.add(evaluator.compute(query.getId(), Metric.P_10));
+            evaluatedMetricValues.add(evaluator.compute(query.getId(), Metric.AP));
         }
 
         for (QPPMethod qppMethod: qppMethods) {

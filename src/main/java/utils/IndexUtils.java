@@ -1,18 +1,21 @@
 package utils;
 
+import indexing.MsMarcoIndexer;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.search.*;
+import org.apache.lucene.util.QueryBuilder;
 import retrieval.Constants;
 
+import java.io.IOException;
 import java.io.StringReader;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 
 public class IndexUtils {
@@ -83,5 +86,46 @@ public class IndexUtils {
         }
 
         return buff.toString();
+    }
+
+    public static void collectTerms(Query q, Set<Term> out) {
+        try {
+            if (q instanceof TermQuery) {
+                out.add(((TermQuery) q).getTerm());
+            } else if (q instanceof BooleanQuery) {
+                for (BooleanClause c : ((BooleanQuery) q).clauses()) {
+                    collectTerms(c.getQuery(), out);
+                }
+            } else if (q instanceof PhraseQuery) {
+                for (Term t : ((PhraseQuery) q).getTerms()) {
+                    out.add(t);
+                }
+            } else {
+                // other query types: skip or try rewriting further
+                Query rew = q.rewrite(reader);  // need an IndexReader in scope
+                if (rew != q) {
+                    collectTerms(rew, out);
+                }
+            }
+        }
+        catch (Exception ex) { ex.printStackTrace(); }
+    }
+
+    static Query makeQuery(String qText) {
+        BooleanQuery.Builder qb = new BooleanQuery.Builder();
+        String[] tokens = MsMarcoIndexer
+                .analyze(MsMarcoIndexer.constructAnalyzer(), qText).split("\\s+");
+        for (String token: tokens) {
+            TermQuery tq = new TermQuery(new Term(Constants.CONTENT_FIELD, token));
+            qb.add(new BooleanClause(tq, BooleanClause.Occur.SHOULD));
+        }
+        return qb.build();
+    }
+
+    public static void main(String[] args) {
+        Query q = makeQuery("Lucene is cool");
+        Set<Term> terms = new HashSet<>();
+        collectTerms(q, terms);
+        terms.stream().forEach(System.out::println);
     }
 }

@@ -41,27 +41,29 @@ public class NQCSpecificity extends BaseIDFSpecificity {
         return computeNQC(q, rsvs);
     }
 
+    protected double avgIDF(Query q) throws IOException {
+        return reader!=null? Arrays.stream(idfs(q)).average().getAsDouble() : 1.0;
+    }
+
     public double computeNQC(Query q, double[] rsvs) {
         rsvs = Arrays.stream(rsvs).limit(topK).toArray();
 
         //double ref = new StandardDeviation().evaluate(rsvs);
         double ref = Arrays.stream(rsvs).average().getAsDouble();
-        double avgIDF = 0;
         double nqc = 0;
         double del;
-        for (double rsv: rsvs) {
-            del = rsv - ref;
-            nqc += del*del;
-        }
-        nqc /= (double)rsvs.length;
-
         try {
-            avgIDF = reader!=null? Arrays.stream(idfs(q)).average().getAsDouble() : 1.0;
+            for (double rsv: rsvs) {
+                del = rsv - ref;
+                nqc += del*del;
+            }
+            nqc /= (double)rsvs.length;
+            return nqc * avgIDF(q); // high variance, high avgIDF -- more specificity
         }
         catch (IOException e) {
             e.printStackTrace();
         }
-        return nqc * avgIDF; // high variance, high avgIDF -- more specificity
+        return 1.0;
     }
 
     @Override

@@ -7,6 +7,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TopDocs;
 import retrieval.MsMarcoQuery;
+import utils.IndexUtils;
 
 import java.io.IOException;
 import java.util.*;
@@ -62,9 +63,11 @@ public abstract class BaseIDFSpecificity extends BaseQPPMethod {
 
         //+++LUCENE_COMPATIBILITY: Sad there's no #ifdef like C!
         // 8.x CODE
-        q.createWeight(searcher, ScoreMode.COMPLETE, 1).extractTerms(qterms);
+        //q.createWeight(searcher, ScoreMode.COMPLETE, 1).extractTerms(qterms);
         // 5.x CODE
         //q.createWeight(searcher, false).extractTerms(qterms);
+        // 9.x code
+        IndexUtils.collectTerms(q, qterms);
         //---LUCENE_COMPATIBILITY
 
         double aggregated_idf = 0;
@@ -85,9 +88,11 @@ public abstract class BaseIDFSpecificity extends BaseQPPMethod {
 
         //+++LUCENE_COMPATIBILITY: Sad there's no #ifdef like C!
         // 8.x CODE
-        q.createWeight(searcher, ScoreMode.COMPLETE, 1).extractTerms(qterms);
+        // q.createWeight(searcher, ScoreMode.COMPLETE, 1).extractTerms(qterms);
         // 5.x CODE
         //q.createWeight(searcher, false).extractTerms(qterms);
+        // 9.x code
+        IndexUtils.collectTerms(q, qterms);
         //---LUCENE_COMPATIBILITY
         double[] idfs = new double[qterms.size()];
 
