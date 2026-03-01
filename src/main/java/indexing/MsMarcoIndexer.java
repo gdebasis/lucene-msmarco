@@ -77,7 +77,7 @@ public class MsMarcoIndexer {
             if (parts.length >= 1) {
                 String docId = parts[0];
                 // normalize the number tokens (the values themselves are not important)
-                String content = normalizeNumbers(parts[1]);
+                String content = Constants.NORMALISE_NUMBERS? normalizeNumbers(parts[1]) : parts[1];
 
                 doc = constructDoc(docId, content);
                 writer.addDocument(doc);

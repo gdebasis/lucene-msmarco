@@ -64,12 +64,14 @@ public class SubspaceVectorNQC extends NQCSpecificity {
 
         // Deterministic order (important!)
         List<Term> qTerms = new ArrayList<>(qTermsSet);
+        /*
         String[] queryWords = qTerms.stream()
                 .map(Term::text)
                 .toArray(String[]::new);
 
         // Recommended: sort for stability across runs
         qTerms.sort(Comparator.comparing(Term::text));
+        */
 
         int T = qTerms.size();
         if (T == 0)
@@ -78,10 +80,11 @@ public class SubspaceVectorNQC extends NQCSpecificity {
         // Build match vectors for top-k docs
         List<MatchVector> matchVectors =
                 buildMatchVectors(qTerms, topDocs);
-        matchVectors.sort(Comparator.comparingDouble(MatchVector::l1Norm).reversed());
+        //matchVectors.sort(Comparator.comparingDouble(MatchVector::l1Norm).reversed());
 
         //System.out.println("Test status: " + test(matchVectors, topDocs, 0, qTerms));
-        /*
+
+        ///*
         System.out.println("Sim scores:");
         for (int i=0; i < topK; i++) {
             System.out.print("(" + topDocs.scoreDocs[i].doc + ", " + topDocs.scoreDocs[i].score + "), ");
@@ -90,9 +93,9 @@ public class SubspaceVectorNQC extends NQCSpecificity {
 
         System.out.println("Matched vectors");
         for (MatchVector mv: matchVectors) {
-            System.out.println(mv + ": " + mv.l1Norm());
+            System.out.println(mv + ": L1-norm = " + mv.l1Norm());
         }
-         */
+        //*/
 
         MatchVector globalMean = new MatchVector(-1);
         for (MatchVector v : matchVectors) {
@@ -103,11 +106,12 @@ public class SubspaceVectorNQC extends NQCSpecificity {
 
         //List<int[]> subspaces = buildSubspaces(qTerms, oneDimSubspaceOnly);
         List<Set<String>> subspaces = buildSubspaces(qTerms, oneDimSubspaceOnly);
+        System.out.println("####Subspaces:");
+        for (Set<String> ss: subspaces)
+            System.out.println(ss);
 
         double totalVar = 0.0;
-        //double[] subspaceVariances = new double[subspaces.size()];
 
-        int i = 0;
         for (Set<String> subSpace : subspaces) {
             double subspaceVariance = subspaceVariance(matchVectors, globalMean, subSpace);
 
@@ -118,14 +122,50 @@ public class SubspaceVectorNQC extends NQCSpecificity {
             System.out.println("Variance: " + subspaceVariance);
             */
             totalVar += subspaceVariance;
-            //subspaceVariances[i++] = subspaceVariance;
         }
 
-        //return new Variance().evaluate(subspaceVariances) * avgIDF(query);
         return totalVar * avgIDF(query) / (double)(subspaces.size() * topDocs.scoreDocs.length);
+        //return totalVar * avgIDF(query) / (double)(subspaces.size());
     }
 
-    protected List<MatchVector> buildMatchVectors(
+    protected List<MatchVector> buildMatchVectors(List<Term> qTerms,
+                                                  TopDocs topDocs)
+            throws IOException {
+
+        int k = Math.min(topK, topDocs.scoreDocs.length);
+
+        // One MatchVector per top-k document (same order as topDocs)
+        List<MatchVector> vectors = new ArrayList<>(k);
+        for (int i = 0; i < k; i++) {
+            vectors.add(new MatchVector(topDocs.scoreDocs[i].doc));
+        }
+
+        // Map global docID -> rank in topDocs
+        Map<Integer, Integer> docIdToRank = new HashMap<>();
+        for (int i = 0; i < k; i++) {
+            docIdToRank.put(topDocs.scoreDocs[i].doc, i);
+        }
+
+        // For each query term, run an independent TermQuery
+        for (Term term : qTerms) {
+            Query tq = new TermQuery(term);
+
+            // Search only up to k docs — sufficient for QPP
+            TopDocs termResults = searcher.search(tq, 1000);
+
+            // Fill contributions for documents that overlap with original top-k
+            for (ScoreDoc sd : termResults.scoreDocs) {
+                Integer rank = docIdToRank.get(sd.doc);
+                if (rank != null) {
+                    vectors.get(rank).put(term.text(), (double) sd.score * 1.0/((double)rank + .01));
+                }
+            }
+            // Documents not retrieved by this TermQuery implicitly get 0.0
+        }
+        return vectors;
+    }
+
+    protected List<MatchVector> buildMatchVectorsFromIndexReader(
             List<Term> qTerms,
             TopDocs topDocs) throws IOException {
 
@@ -136,7 +176,7 @@ public class SubspaceVectorNQC extends NQCSpecificity {
 
         Map<Integer, Integer> docIdToRank = new HashMap<>();
         for (int i = 0; i < topK; i++) {
-            docIdToRank.put(topDocs.scoreDocs[i].doc, i);
+            docIdToRank.put(topDocs.scoreDocs[i].doc, i+1);
         }
 
         IndexReader reader = searcher.getIndexReader();
@@ -209,43 +249,50 @@ public class SubspaceVectorNQC extends NQCSpecificity {
     }
 
     protected List<Set<String>> buildSubspaces(List<Term> qTerms, boolean oneDimSubspaceOnly) {
-        List<Set<String>> subs = new ArrayList<>();
+        Set<Set<String>> subs = new HashSet<>();
         int T = qTerms.size();
 
+        Set<String> qTermsText = qTerms.stream()
+                .map(Term::text)
+                .collect(Collectors.toSet())
+                ;
+        List<String> qTermsTextList = qTerms.stream()
+                .map(Term::text)
+                .collect(Collectors.toList())
+                ;
+
+        /*
         // size-1
         for (Term t : qTerms) {
             subs.add(Set.of(t.text()));
         }
         if (oneDimSubspaceOnly)
-            return subs;
+            return subs.stream().collect(Collectors.toList());
+        */
 
         // size-2
+        /*
         for (int i = 0; i < T; i++) {
             for (int j = i + 1; j < T; j++) {
                 subs.add(Set.of(qTerms.get(i).text(), qTerms.get(j).text()));
             }
         }
 
-        Set<String> qTermsText = qTerms.stream()
-                .map(Term::text)
-                .collect(Collectors.toSet())
-        ;
-        List<String> qTermsTextList = qTerms.stream()
-                .map(Term::text)
-                .collect(Collectors.toList())
-                ;
+        */
 
         // full space
         subs.add(qTermsText);
 
         // random higher-order
+        /*
         if (T > 3) {
             for (int r = 0; r < maxRandomSubspaces; r++) {
                 int dim = 3 + rnd.nextInt(T - 2);
                 subs.add(sampleRandomSubspace(qTermsTextList, dim));
             }
         }
-        return subs;
+        */
+        return subs.stream().collect(Collectors.toList());
     }
 
     protected Set<String> sampleRandomSubspace(List<String> qTerms, int dim) {

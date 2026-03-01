@@ -61,7 +61,7 @@ public class OneStepRetriever {
     public Map<String, String> getQueryMap() { return queries; }
     public IndexSearcher getSearcher() { return searcher; }
 
-    public Map<String, String> loadQueries(String queryFile) throws Exception {
+    public static Map<String, String> loadQueries(String queryFile) throws Exception {
         return
                 FileUtils.readLines(new File(queryFile), StandardCharsets.UTF_8)
                         .stream()

@@ -33,7 +33,8 @@ public class SimpleQPPExperimentWorkflow {
 
         QPPMethod[] qppMethods = {
                 new NQCSpecificity(retriever.getSearcher(), 50),
-                new SubspaceVectorNQC(retriever.getSearcher(), new BM25Similarity(), 50, true),
+                new RRNQCSpecificity(retriever.getSearcher(), 50)
+                //new SubspaceVectorNQC(retriever.getSearcher(), new BM25Similarity(), 50, false),
 //                new VariantSpecificity(
 //                        new NQCSpecificity(retriever.getSearcher(), 100),
 //                        retriever.getSearcher(),

@@ -8,6 +8,7 @@ import org.apache.lucene.search.*;
 import org.json.simple.JSONObject;
 import qrels.AllRelRcds;
 import qrels.PerQueryRelDocs;
+import utils.IndexUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -43,7 +44,10 @@ public class MsMarcoQuery implements Comparable<MsMarcoQuery> {
         this.query = query;
         try {
             Set<Term> origTerms = new HashSet<>();
-            query.createWeight(searcher, ScoreMode.COMPLETE, 1).extractTerms(origTerms);
+
+            //+++Migrate: Lucene 8 to 9
+            //query.createWeight(searcher, ScoreMode.COMPLETE, 1).extractTerms(origTerms);
+            IndexUtils.collectTerms(query, origTerms);
             qText = origTerms.stream().map(x->x.text()).collect(Collectors.joining(" "));
         }
         catch (Exception ex) {

@@ -1,6 +1,7 @@
 package retrieval;
 
 public interface Constants {
+    boolean NORMALISE_NUMBERS = false;
     String ID_FIELD = "id";
     String CONTENT_FIELD = "words";
     String TREC_FAIR_IR_METADATA = "/Users/debasis/research/fair_ir/metadata.jsonl";
